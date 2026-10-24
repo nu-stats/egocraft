@@ -7,7 +7,9 @@ import { mappingProblems } from '../core/study.ts';
 import { csvOf, dtaOf, savOf, xlsxOf } from '../export/export.ts';
 import { buildNetworks } from '../network/networks.ts';
 import { longForm, pairsForm, wideForm } from '../reshape/forms.ts';
+import type { Notify } from './common.tsx';
 import { download, Panel, TablePreview } from './common.tsx';
+import { MergePanel } from './MergePanel.tsx';
 
 type Tab = 'egos' | 'alters' | 'ties' | 'long' | 'wide' | 'pairs';
 
@@ -39,7 +41,7 @@ export function SaveButtons({ table, base }: { table: DataTable; base: string })
   );
 }
 
-export function DataView({ study }: { study: Study }) {
+export function DataView({ study, onStudy, notify }: { study: Study; onStudy: (s: Study) => void; notify: Notify }) {
   const [tab, setTab] = useState<Tab>('long');
   const ready = study.egos.rows.length > 0 && mappingProblems(study).length === 0;
   const nets = useMemo(() => (ready ? buildNetworks(study) : null), [study, ready]);
@@ -78,6 +80,7 @@ export function DataView({ study }: { study: Study }) {
           <p className="muted">{tab === 'ties' ? 'This study has no tie file.' : 'Choose the columns first.'}</p>
         )}
       </Panel>
+      {ready ? <MergePanel study={study} onStudy={onStudy} notify={notify} /> : null}
     </div>
   );
 }

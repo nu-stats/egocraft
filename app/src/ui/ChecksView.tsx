@@ -6,6 +6,7 @@ import { mappingProblems } from '../core/study.ts';
 import { applyFix, runChecks } from '../import/checks.ts';
 import type { Notify } from './common.tsx';
 import { download, Panel } from './common.tsx';
+import { PrivacyPanel } from './PrivacyPanel.tsx';
 
 export function importReport(study: Study): string {
   const lines = [`EgoCraft import report: ${study.name}`, `Made ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`, ''];
@@ -69,6 +70,7 @@ export function ChecksView({ study, onStudy, notify, goNext }: { study: Study; o
           </div>
         ) : null}
       </Panel>
+      <PrivacyPanel study={study} onStudy={onStudy} notify={notify} />
       <Panel title="What has been done so far">
         <ol className="history">
           {study.history.map((h, k) => (
