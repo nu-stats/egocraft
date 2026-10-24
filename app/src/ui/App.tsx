@@ -31,7 +31,18 @@ const STEPS: { id: Step; label: string }[] = [
   { id: 'results', label: 'Results' },
 ];
 
-function StudyView({ project, onProject, notify, go }: { project: Project | null; onProject: (p: Project | null) => void; notify: Notify; go: (s: Step) => void }) {
+const LAST_FILE = 'egocraft-last-file-save';
+
+function lastFileSave(id: string): string | null {
+  try {
+    return localStorage.getItem(`${LAST_FILE}:${id}`);
+  } catch {
+    return null;
+  }
+}
+
+function StudyView({ project, onProject, notify, go, kept }: { project: Project | null; onProject: (p: Project | null) => void; notify: Notify; go: (s: Step) => void; kept: boolean | null }) {
+  const [, setTick] = useState(0);
   const open = async () => {
     const f = await pickFile('.egocraft,.json');
     if (!f) return;
@@ -49,7 +60,7 @@ function StudyView({ project, onProject, notify, go }: { project: Project | null
       <p>
         Personal network analysis, start to finish: bring in your ego, alter and tie files, check the IDs, draw each person’s network, compute the measures you choose for any subgroup, and save one row per person to merge back into your survey data, with the Stata and R code that produced it.
       </p>
-      <p className="muted">Everything stays on this computer. EgoCraft has no account, sends nothing anywhere, and keeps your open study in this browser between visits.</p>
+      <p className="muted">Everything stays on this device. EgoCraft has no account, sends nothing anywhere, keeps your open study in this browser between visits, and works without a network once it has been opened.</p>
       <div className="grid3">
         <Panel title="Try it">
           <p className="muted">A made-up study: 200 people in two survey waves, the people they named, and who knows whom.</p>
@@ -69,7 +80,19 @@ function StudyView({ project, onProject, notify, go }: { project: Project | null
           title="This study"
           actions={
             <>
-              <button onClick={() => download(`${s.name.replace(/[\\/:*?"<>|]/g, ' ')}.egocraft`, projectToJson(project!), 'application/json')}>Save as a file</button>
+              <button
+                onClick={() => {
+                  download(`${s.name.replace(/[\\/:*?"<>|]/g, ' ')}.egocraft`, projectToJson(project!), 'application/json');
+                  try {
+                    localStorage.setItem(`${LAST_FILE}:${s.id}`, new Date().toISOString());
+                  } catch {
+                    // Private browsing: nowhere to remember the time.
+                  }
+                  setTick((t) => t + 1);
+                }}
+              >
+                Save as a file
+              </button>
               <button onClick={() => { if (window.confirm('Close this study? Save it as a file first if you want to keep it.')) onProject(null); }}>Close</button>
             </>
           }
@@ -83,9 +106,16 @@ function StudyView({ project, onProject, notify, go }: { project: Project | null
             <span>{s.alters.rows.length ? `${s.alters.name}: ${s.alters.rows.length.toLocaleString('en-US')} rows` : 'not yet'}</span>
             <label>Tie file</label>
             <span>{s.ties ? `${s.ties.name}: ${s.ties.rows.length.toLocaleString('en-US')} rows` : 'none'}</span>
-            <label>Saved</label>
+            <label>Kept in this browser</label>
             <span>{new Date(s.modifiedAt).toLocaleString()}</span>
+            <label>Last saved as a file</label>
+            <span>{lastFileSave(s.id) ? new Date(lastFileSave(s.id)!).toLocaleString() : 'never'}</span>
           </div>
+          {kept !== true ? (
+            <p className="chip warning" style={{ marginTop: 10, whiteSpace: 'normal', display: 'block', padding: '6px 10px' }}>
+              This browser may clear what it keeps (Safari on iPad and iPhone does after some weeks without a visit, and when space runs low). Save the study as a file now and then, and keep the file somewhere safe.
+            </p>
+          ) : null}
         </Panel>
       ) : null}
     </div>
@@ -99,12 +129,15 @@ export function App() {
   const [results, setResults] = useState<Results | null>(null);
   const [toast, setToast] = useState<{ text: string; kind: 'ok' | 'error' } | null>(null);
   const timer = useRef<number | undefined>(undefined);
+  const [kept, setKept] = useState<boolean | null>(null);
 
   useEffect(() => {
     loadCurrent().then((p) => {
       setProject(p);
       setLoaded(true);
     });
+    // Ask the browser to keep EgoCraft's storage even when space runs low.
+    navigator.storage?.persist?.().then(setKept, () => setKept(false));
   }, []);
   useEffect(() => {
     if (!loaded) return;
@@ -140,7 +173,7 @@ export function App() {
   const study = project?.study;
   let body;
   if (!loaded) body = <div className="empty">Opening…</div>;
-  else if (step === 'study' || !project || !study) body = <StudyView project={project} onProject={onProject} notify={notify} go={go} />;
+  else if (step === 'study' || !project || !study) body = <StudyView project={project} onProject={onProject} notify={notify} go={go} kept={kept} />;
   else if (step === 'import') body = <ImportView study={study} onStudy={onStudy} notify={notify} goNext={next} />;
   else if (step === 'columns') body = <MappingView study={study} onStudy={onStudy} goNext={next} />;
   else if (step === 'checks') body = <ChecksView study={study} onStudy={onStudy} notify={notify} goNext={next} />;
@@ -181,7 +214,7 @@ export function App() {
         ))}
         <div className="foot small muted">
           {study ? <span>{study.name}</span> : <span>No study open</span>}
-          <span>Your data stays on this computer.</span>
+          <span>Your data stays on this device.</span>
         </div>
       </nav>
       <main className="main">{body}</main>

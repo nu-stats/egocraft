@@ -139,7 +139,7 @@ export function DropZone({ label, hint, file, onFile, accept }: { label: string;
         >
           {file ? 'Choose another file' : 'Choose a file'}
         </button>
-        <span className="small">{file ?? 'or drop it here'}</span>
+        {file ? <span className="small">{file}</span> : <span className="small over-hint">or drop it here</span>}
       </div>
     </div>
   );

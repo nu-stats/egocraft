@@ -1,9 +1,13 @@
 // Draws EgoCraft's icon (the same shapes as public/icon.svg) as a 256 px PNG
-// for the Pinokio launcher: node scripts/make-icon.mjs ../icon.png
+// for the Pinokio launcher and the Home Screen:
+//   node scripts/make-icon.mjs <file.png> [size] [--square]
+// --square fills the corners (iPad and phones round them themselves).
 import { writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 
-const S = 256;
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const S = Number(args[1] ?? 256);
+const square = process.argv.includes('--square');
 const k = S / 64;
 const px = new Uint8Array(S * S * 4);
 const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -43,7 +47,7 @@ function line(x1, y1, x2, y2, width, c) {
   }, [Math.min(x1, x2) - width, Math.min(y1, y2) - width, Math.max(x1, x2) + width, Math.max(y1, y2) + width], c);
 }
 
-roundRect(0, 0, 64, 64, 14, '#123047');
+roundRect(0, 0, 64, 64, square ? 0.01 : 14, '#123047');
 const alters = [[32, 13], [50, 25], [46, 48], [18, 48], [14, 25]];
 for (const [x, y] of alters) line(32, 32, x, y, 2.5, '#7fb8d8');
 line(32, 13, 50, 25, 3, '#E69F00');
@@ -78,5 +82,5 @@ ihdr.writeUInt32BE(S, 4);
 ihdr[8] = 8;
 ihdr[9] = 6;
 const png = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
-writeFileSync(process.argv[2] ?? 'icon.png', png);
-console.log(`Wrote ${process.argv[2] ?? 'icon.png'}`);
+writeFileSync(args[0] ?? 'icon.png', png);
+console.log(`Wrote ${args[0] ?? 'icon.png'} (${S} px)`);

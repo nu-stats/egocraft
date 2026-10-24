@@ -94,6 +94,30 @@ address EgoCraft runs at, so it is still there next time. To keep a copy,
 move it to another computer, or share it, use **Study ▸ Save as a file**
 (`.egocraft`, a JSON file) and **Open a study file**.
 
+Browsers can clear what they keep, and Safari on iPad and iPhone does after
+some weeks without a visit or when space runs low. EgoCraft asks the browser
+to keep its storage, shows when you last saved the study as a file, and
+reminds you to save one now and then.
+
+### On an iPad (or offline anywhere)
+
+EgoCraft is a web app that works without a network once it has been opened:
+the first visit stores the whole app on the device (a service worker), and
+it can be added to the Home Screen, where it opens full screen like an app.
+Screens work by touch: large buttons, drag alters with a finger, and
+**Choose a file** in place of dragging files in.
+
+1. Open EgoCraft's web address in Safari on the iPad.
+2. Tap the Share button, then **Add to Home Screen**.
+3. Open it from the Home Screen. From then on it opens with or without a
+   network, and saving files puts them in the Files app.
+
+The iPad needs EgoCraft at an **https** web address. The Pinokio address
+(`http://127.0.0.1:…`) works only on the computer running Pinokio, so for
+iPads the built app (`app/dist`, a folder of static files) has to be put on
+a web host first, for example GitHub Pages or a university web server. No
+study data goes to the host: it only hands out the app's files.
+
 ## Programmatic access
 
 EgoCraft has no web API: its server only hands out the app's files, and all

@@ -27,6 +27,7 @@ const TYPES = {
   '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
@@ -72,7 +73,7 @@ const server = createServer(async (req, res) => {
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
       // Nothing is loaded from, or sent to, anywhere else.
-      'Content-Security-Policy': "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-ancestors 'self'",
+      'Content-Security-Policy': "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; connect-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'self'",
     });
     res.end(req.method === 'HEAD' ? undefined : body);
   } catch (e) {
