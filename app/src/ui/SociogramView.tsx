@@ -119,7 +119,7 @@ export function SociogramView({ study, slices, notify, layouts, onLayouts }: { s
     const pos = new Map(auto);
     for (const [id, p] of Object.entries(layouts[current.id] ?? {})) pos.set(id, p);
     if (drag) pos.set(drag.id, { x: drag.x, y: drag.y });
-    svgs = [draw(current, pos, { title: opts.title || caption(current) })];
+    svgs = [draw(current, pos, { title: opts.title || caption(current), width: 900, height: 620 })];
   } else if (mode === 'waves') {
     const pos = new Map(sharedPositions(study, sameEgo, slice, opts, current.id));
     for (const [id, p] of Object.entries(layouts[current.id] ?? {})) pos.set(id, p);
