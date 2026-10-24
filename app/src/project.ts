@@ -6,6 +6,7 @@ import { studyFromJson } from './core/study.ts';
 import type { MeasureRequest } from './measures/measures.ts';
 import type { Slice } from './network/networks.ts';
 import type { Protocol } from './interview/protocol.ts';
+import type { MatchOverride, MatchRule } from './waves/waves.ts';
 
 export interface Project {
   format: 'egocraft-project';
@@ -17,6 +18,8 @@ export interface Project {
   layouts?: Record<string, Record<string, { x: number; y: number }>>;
   /** The interview questionnaire the study came from, if it was collected in EgoCraft. */
   protocol?: Protocol;
+  /** How alters are matched across waves, and matches set by hand. */
+  waveMatch?: { rule: MatchRule; overrides: MatchOverride[] };
 }
 
 export const DEFAULT_MEASURES: MeasureRequest[] = [
@@ -58,5 +61,6 @@ export function projectFromJson(text: string): Project {
     measures: Array.isArray(p.measures) ? p.measures : DEFAULT_MEASURES,
     ...(p.layouts && typeof p.layouts === 'object' ? { layouts: p.layouts } : {}),
     ...(p.protocol && typeof p.protocol === 'object' ? { protocol: p.protocol } : {}),
+    ...(p.waveMatch && typeof p.waveMatch === 'object' ? { waveMatch: p.waveMatch } : {}),
   };
 }

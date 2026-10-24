@@ -220,7 +220,7 @@ export function App() {
         goNext={next}
       />
     );
-  else body = <ResultsView study={study} results={results} measures={project.measures} slices={project.slices} notify={notify} {...(project.protocol ? { protocol: project.protocol } : {})} />;
+  else body = <ResultsView study={study} results={results} measures={project.measures} slices={project.slices} notify={notify} {...(project.protocol ? { protocol: project.protocol } : {})} waveMatch={project.waveMatch ?? { rule: { kind: 'id' }, overrides: [] }} onWaveMatch={(waveMatch) => setProject({ ...project, waveMatch })} />;
 
   return (
     <div className="shell">

@@ -18,6 +18,8 @@ import { buildDocx } from './docx.ts';
 import type { Block } from './docx.ts';
 import { methodsPlainText, methodsText } from './methods.ts';
 import { alterMeasures } from '../measures/alters.ts';
+import type { MatchOverride, MatchRule } from '../waves/waves.ts';
+import { changeTable, measuresWide, transitions } from '../waves/waves.ts';
 import { descriptives, descriptivesBlock, descriptivesLatex, missingReport } from './tables.ts';
 import type { Protocol } from '../interview/protocol.ts';
 import { protocolText } from '../interview/protocol.ts';
@@ -253,6 +255,8 @@ export interface Bundle {
   pairs: DataTable;
   /** The questionnaire, when the study was collected in EgoCraft. */
   protocol?: Protocol;
+  /** How alters are matched across waves (default: same alter ID). */
+  waveMatch?: { rule: MatchRule; overrides: MatchOverride[] };
 }
 
 /** The Word file: the descriptive table, then the methods draft and its references. */
@@ -290,6 +294,7 @@ export function bundleZip(b: Bundle, now = new Date()): Uint8Array {
     'egocraft_methods.txt                 the draft methods section as plain text, with references',
     'egocraft_missing.csv                 for each measure, how many egos have a value and how much is missing',
     'egocraft_alter_measures.csv          one row per alter: degree, betweenness, group, share of constraint',
+    ...(nets.waves.length > 1 ? ['egocraft_change.csv                  change between waves: alters kept, dropped, added, tie churn, change in each measure', 'egocraft_measures_by_wave.csv        the measures with the waves side by side'] : []),
     ...(b.protocol ? ['egocraft_questionnaire.txt           the interview questionnaire: wording, variable names and answer codes'] : []),
     '',
     ...b.results.notes,
@@ -312,6 +317,12 @@ export function bundleZip(b: Bundle, now = new Date()): Uint8Array {
     'egocraft_methods.txt': strToU8(methodsPlainText(methods)),
     'egocraft_missing.csv': strToU8(csvOf(missingReport(b.study, b.results, b.measures, b.slices, nets))),
     'egocraft_alter_measures.csv': strToU8(csvOf(alterMeasures(b.study, undefined, nets))),
+    ...(nets.waves.length > 1
+      ? {
+          'egocraft_change.csv': strToU8(csvOf(changeTable(b.study, transitions(b.study, b.waveMatch?.rule ?? { kind: 'id' }, b.waveMatch?.overrides ?? [], nets), b.results))),
+          'egocraft_measures_by_wave.csv': strToU8(csvOf(measuresWide(b.study, b.results))),
+        }
+      : {}),
     ...(b.protocol ? { 'egocraft_questionnaire.txt': strToU8(protocolText(b.protocol)), 'egocraft_questionnaire.egocraft-protocol': strToU8(JSON.stringify(b.protocol, null, 2) + '\n') } : {}),
   };
   return zipSync(files, { level: 6 });
