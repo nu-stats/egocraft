@@ -131,6 +131,8 @@ export interface Slice {
   label: string;
   /** Alter–alter tie types to count; null = all types. */
   tieTypes: string[] | null;
+  /** With several tie types: a pair counts if tied in any of them (default) or only if tied in all of them. */
+  tieTypeMode?: 'any' | 'all';
   /** Alters kept: all conditions must hold. */
   alterConditions: Condition[];
   /** Ties weaker than this are left out; null = keep all. */
@@ -156,7 +158,7 @@ export function conditionHolds(column: Column | undefined, value: Cell | undefin
 
 export function describeSlice(s: Slice): string {
   const parts: string[] = [];
-  parts.push(s.tieTypes === null ? 'all tie types' : `tie types: ${s.tieTypes.join(', ') || 'none'}`);
+  parts.push(s.tieTypes === null ? 'all tie types' : s.tieTypeMode === 'all' && s.tieTypes.length > 1 ? `pairs tied as all of: ${s.tieTypes.join(', ')}` : `tie types: ${s.tieTypes.join(', ') || 'none'}`);
   for (const c of s.alterConditions) {
     if (c.op === 'notMissing') parts.push(`alters with ${c.column} answered`);
     else if (c.op === 'atLeast') parts.push(`alters with ${c.column} ≥ ${c.values[0]}`);
@@ -194,6 +196,8 @@ export function graphFor(study: Study, net: EgoNetwork, slice: Slice): Graph {
   const w = new Float64Array(n * n);
   const unknown = new Uint8Array(n * n);
   const types = slice.tieTypes ? new Set(slice.tieTypes) : null;
+  const allTypes = !!types && types.size > 1 && slice.tieTypeMode === 'all';
+  const typesOf = new Map<number, Set<string>>();
   for (const t of net.ties) {
     const i = index.get(t.a);
     const k = index.get(t.b);
@@ -215,7 +219,23 @@ export function graphFor(study: Study, net: EgoNetwork, slice: Slice): Graph {
     w[k * n + i] = v;
     unknown[i * n + k] = 0;
     unknown[k * n + i] = 0;
+    if (allTypes && t.type !== null) {
+      const key = i < k ? i * n + k : k * n + i;
+      const set = typesOf.get(key) ?? new Set<string>();
+      set.add(t.type);
+      typesOf.set(key, set);
+    }
   }
+  // "Tied in all of these types" (P8.3): a pair counts only if it is tied in every chosen type.
+  if (allTypes)
+    for (let i = 0; i < n; i++)
+      for (let k = i + 1; k < n; k++) {
+        if (!w[i * n + k]) continue;
+        if ((typesOf.get(i * n + k)?.size ?? 0) < types!.size) {
+          w[i * n + k] = 0;
+          w[k * n + i] = 0;
+        }
+      }
   const sj = study.mapping.egoAlterStrength ? columnIndex(A, study.mapping.egoAlterStrength) : -1;
   const egoStrength = kept.map((al) => {
     if (sj < 0) return 1;

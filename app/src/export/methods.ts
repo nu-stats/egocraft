@@ -18,6 +18,7 @@ const REFERENCES: Record<string, string> = {
   'Blau (1977)': 'Blau, P. M. (1977). Inequality and heterogeneity: A primitive theory of social structure. Free Press.',
   'Agresti and Agresti (1978)': 'Agresti, A., & Agresti, B. F. (1978). Statistical analysis of qualitative variation. Sociological Methodology, 9, 204–237.',
   'Krackhardt and Stern (1988)': 'Krackhardt, D., & Stern, R. N. (1988). Informal networks and organizational crises: An experimental simulation. Social Psychology Quarterly, 51(2), 123–140.',
+  'Verbrugge (1979)': 'Verbrugge, L. M. (1979). Multiplexity in adult friendships. Social Forces, 57(4), 1286–1309.',
   'Yule (1900)': 'Yule, G. U. (1900). On the association of attributes in statistics. Philosophical Transactions of the Royal Society of London, Series A, 194, 257–319.',
 };
 
@@ -53,6 +54,10 @@ function phrase(spec: MeasureSpec): string {
     case 'diversity': return `${{ blau: "Blau's index", iqv: 'the index of qualitative variation (IQV)', entropy: 'entropy', categories: 'the number of categories' }[spec.index]} of alters' ${spec.variable}`;
     case 'similarity': return `${{ ei: 'the E-I index', sameShare: 'the share of alters with the same', meanAbsDiff: 'the mean absolute difference between ego and alters in' }[spec.index]}${spec.index === 'ei' ? ` for ${spec.alterVariable} (alters different from ego minus alters the same, over all alters)` : ` ${spec.alterVariable}${spec.index === 'sameShare' ? ' as ego' : ''}`}`;
     case 'yulesQ': return `alter–alter homophily on ${spec.variable} (Yule's Q)`;
+    case 'multiplexity': return spec.stat === 'mean' ? `multiplexity, the mean number of kinds of tie per alter (${spec.columns.join(', ')})` : `the share of alters tied to the ego in more than one way (${spec.columns.join(', ')})`;
+    case 'layerOverlap': return `the overlap of ${spec.a} and ${spec.b} ties to the ego (alters with both over alters with either)`;
+    case 'tieMultiplexity': return 'the share of tied alter pairs tied in more than one way';
+    case 'tieLayerOverlap': return `the overlap of ${spec.a} and ${spec.b} ties among alters (pairs with both over pairs with either)`;
   }
 }
 

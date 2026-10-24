@@ -34,7 +34,13 @@ export type MeasureSpec =
   | { kind: 'composition'; variable: string; stat: CompositionStat; values?: string[] }
   | { kind: 'diversity'; variable: string; index: DiversityIndex }
   | { kind: 'similarity'; egoVariable: string; alterVariable: string; index: SimilarityIndex }
-  | { kind: 'yulesQ'; variable: string };
+  | { kind: 'yulesQ'; variable: string }
+  /** Ego–alter layers: alter columns that say yes/no to a kind of tie (gen_discuss, gives_money …). */
+  | { kind: 'multiplexity'; columns: string[]; stat: 'mean' | 'shareMulti' }
+  | { kind: 'layerOverlap'; a: string; b: string }
+  /** Alter–alter layers: the tie types in the tie file. */
+  | { kind: 'tieMultiplexity' }
+  | { kind: 'tieLayerOverlap'; a: string; b: string };
 
 export type MeasureKind = MeasureSpec['kind'];
 
@@ -48,7 +54,7 @@ export interface MeasureRequest {
 interface Info {
   short: string;
   name: string;
-  group: 'Size and structure' | 'Brokerage' | 'Groups' | 'Composition' | 'Similarity' | 'Data quality';
+  group: 'Size and structure' | 'Brokerage' | 'Groups' | 'Composition' | 'Similarity' | 'Data quality' | 'Several kinds of tie';
   explain: string;
   citation?: string;
 }
@@ -76,6 +82,10 @@ export const MEASURE_INFO: Record<MeasureKind, Info> = {
   composition: { short: 'comp', name: 'Composition', group: 'Composition', explain: 'A summary of an alter variable across the ego’s alters (mean, share …).' },
   diversity: { short: 'div', name: 'Diversity', group: 'Composition', explain: 'How mixed the alters are on a category: number of categories, Blau’s index (chance two alters differ), IQV (Blau scaled 0–1), or entropy.', citation: 'Blau (1977); Agresti and Agresti (1978)' },
   similarity: { short: 'sim', name: 'Ego–alter similarity', group: 'Similarity', explain: 'How alike the ego and alters are: E-I index (alters in other groups minus same group, over all), share same as ego, or mean absolute difference.', citation: 'Krackhardt and Stern (1988)' },
+  multiplexity: { short: 'mplex', name: 'Multiplexity (ego–alter)', group: 'Several kinds of tie', explain: 'How many kinds of tie the ego has with each alter (from yes/no alter columns, such as the name generators): the mean number, or the share of alters tied in more than one way.', citation: 'Verbrugge (1979)' },
+  layerOverlap: { short: 'overlap', name: 'Overlap of two kinds of tie (ego–alter)', group: 'Several kinds of tie', explain: 'Alters tied to the ego both ways, divided by alters tied either way (Jaccard): do the people you discuss things with also help you?' },
+  tieMultiplexity: { short: 'aamplex', name: 'Multiplexity (alter–alter)', group: 'Several kinds of tie', explain: 'Share of tied pairs of alters who are tied in more than one way (more than one tie type).', citation: 'Verbrugge (1979)' },
+  tieLayerOverlap: { short: 'aaoverlap', name: 'Overlap of two tie types (alter–alter)', group: 'Several kinds of tie', explain: 'Pairs of alters tied both ways, divided by pairs tied either way (Jaccard).' },
   yulesQ: { short: 'yq', name: 'Alter–alter homophily (Yule’s Q)', group: 'Similarity', explain: 'Whether alters in the same category are more likely to be tied to each other: +1 = only same-category ties, −1 = only cross-category ties.', citation: 'Yule (1900)' },
 };
 
@@ -109,6 +119,12 @@ export function defaultColumn(r: MeasureRequest): string {
       return safeName(`${SIM_SHORT[s.index]}_${s.alterVariable}${tail}`);
     case 'yulesQ':
       return safeName(`yq_${s.variable}${tail}`);
+    case 'multiplexity':
+      return safeName(`${s.stat === 'mean' ? 'mplex' : 'pctmplex'}${tail}`);
+    case 'layerOverlap':
+      return safeName(`overlap_${s.a}_${s.b}${tail}`);
+    case 'tieLayerOverlap':
+      return safeName(`aaoverlap_${s.a}_${s.b}${tail}`);
     default:
       return safeName(`${MEASURE_INFO[s.kind].short}${tail}`);
   }
@@ -130,6 +146,15 @@ export function measureLabel(r: MeasureRequest, slice: Slice): string {
       break;
     case 'yulesQ':
       base = `Yule's Q on ${s.variable}`;
+      break;
+    case 'multiplexity':
+      base = s.stat === 'mean' ? `Mean kinds of tie per alter (${s.columns.join(', ')})` : `Share of alters tied more than one way (${s.columns.join(', ')})`;
+      break;
+    case 'layerOverlap':
+      base = `Overlap of ${s.a} and ${s.b}`;
+      break;
+    case 'tieLayerOverlap':
+      base = `Overlap of ${s.a} and ${s.b} ties among alters`;
       break;
     default:
       base = MEASURE_INFO[s.kind].name;
@@ -299,7 +324,55 @@ function value(ctx: Context, net: EgoNetwork, g: Graph, spec: MeasureSpec): numb
       const col = A.columns[j];
       return S.yulesQ(g, (i) => categoryOf(col, A.rows[g.alterRows[i]!]![j]));
     }
+    case 'multiplexity': {
+      const js = spec.columns.map((c) => columnIndex(A, c)).filter((j) => j >= 0);
+      if (!js.length || !g.n) return null;
+      const counts = g.alterRows.map((r) => js.filter((j) => isYes(A.rows[r]![j])).length);
+      return spec.stat === 'mean' ? counts.reduce((a, b) => a + b, 0) / counts.length : counts.filter((c) => c > 1).length / counts.length;
+    }
+    case 'layerOverlap': {
+      const ja = columnIndex(A, spec.a);
+      const jb = columnIndex(A, spec.b);
+      if (ja < 0 || jb < 0) return null;
+      let both = 0;
+      let either = 0;
+      for (const r of g.alterRows) {
+        const x = isYes(A.rows[r]![ja]);
+        const y = isYes(A.rows[r]![jb]);
+        if (x && y) both++;
+        if (x || y) either++;
+      }
+      return either ? both / either : null;
+    }
+    case 'tieMultiplexity':
+    case 'tieLayerOverlap': {
+      const kept = new Set(g.alterIds);
+      const byPair = new Map<string, Set<string>>();
+      for (const t of net.ties) {
+        if (t.state !== true || t.type === null || !kept.has(t.a) || !kept.has(t.b)) continue;
+        const k = t.a < t.b ? `${t.a}${t.b}` : `${t.b}${t.a}`;
+        byPair.set(k, (byPair.get(k) ?? new Set<string>()).add(t.type));
+      }
+      if (spec.kind === 'tieMultiplexity') return byPair.size ? [...byPair.values()].filter((x) => x.size > 1).length / byPair.size : null;
+      let both = 0;
+      let either = 0;
+      for (const types of byPair.values()) {
+        const x = types.has(spec.a);
+        const y = types.has(spec.b);
+        if (x && y) both++;
+        if (x || y) either++;
+      }
+      return either ? both / either : null;
+    }
   }
+}
+
+/** A yes in a yes/no column: a number other than 0, or yes / true / y. */
+function isYes(v: Cell | undefined): boolean {
+  if (isMissing(v)) return false;
+  const n = numberOf(v);
+  if (n !== null) return n !== 0;
+  return ['yes', 'y', 'true', 't'].includes(String(v).trim().toLowerCase());
 }
 
 function definition(r: MeasureRequest): string {
@@ -312,6 +385,8 @@ function definition(r: MeasureRequest): string {
   if (s.kind === 'diversity') return `${info.explain} Variable: ${s.variable}. Alters with it missing are left out.`;
   if (s.kind === 'similarity') return `${info.explain} Ego variable ${s.egoVariable}, alter variable ${s.alterVariable}.`;
   if (s.kind === 'yulesQ') return `${info.explain} Variable: ${s.variable}.`;
+  if (s.kind === 'multiplexity') return `${info.explain} Columns: ${s.columns.join(', ')}.`;
+  if (s.kind === 'layerOverlap' || s.kind === 'tieLayerOverlap') return `${info.explain} Kinds: ${s.a} and ${s.b}.`;
   return info.explain;
 }
 

@@ -15,7 +15,8 @@ import type { Block } from './docx.ts';
 /** Measures that can't go above 1 in size, printed without a leading zero (APA). */
 function boundedByOne(spec: MeasureSpec): boolean {
   const k = spec.kind;
-  if (['density', 'egoBetweennessNorm', 'efficiency', 'largestComponentShare', 'yulesQ'].includes(k)) return true;
+  if (['density', 'egoBetweennessNorm', 'efficiency', 'largestComponentShare', 'yulesQ', 'layerOverlap', 'tieMultiplexity', 'tieLayerOverlap'].includes(k)) return true;
+  if (spec.kind === 'multiplexity') return spec.stat === 'shareMulti';
   if (spec.kind === 'composition') return spec.stat === 'share' || spec.stat === 'shareAtLeast';
   if (spec.kind === 'diversity') return spec.index === 'blau' || spec.index === 'iqv';
   if (spec.kind === 'similarity') return spec.index !== 'meanAbsDiff';

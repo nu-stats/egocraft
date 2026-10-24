@@ -12,7 +12,7 @@ import { ALL, buildNetworks, describeSlice } from '../network/networks.ts';
 import type { Notify } from './common.tsx';
 import { ColumnSelect, Panel, TablePreview } from './common.tsx';
 
-const STRUCTURAL: MeasureKind[] = ['size', 'ties', 'density', 'weightedDensity', 'meanDegree', 'maxDegree', 'egoBetweenness', 'egoBetweennessNorm', 'meanAlterBetweenness', 'maxAlterBetweenness', 'effectiveSize', 'efficiency', 'constraint', 'hierarchy', 'components', 'largestComponentShare', 'isolates', 'unknownPairs'];
+const STRUCTURAL: MeasureKind[] = ['size', 'ties', 'density', 'weightedDensity', 'meanDegree', 'maxDegree', 'egoBetweenness', 'egoBetweennessNorm', 'meanAlterBetweenness', 'maxAlterBetweenness', 'effectiveSize', 'efficiency', 'constraint', 'hierarchy', 'components', 'largestComponentShare', 'isolates', 'tieMultiplexity', 'unknownPairs'];
 
 const same = (a: MeasureSpec, b: MeasureSpec) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -21,13 +21,15 @@ function SliceEditor({ study, tieTypes, slices, onSlices }: { study: Study; tieT
   const [types, setTypes] = useState<string[] | null>(null);
   const [conds, setConds] = useState<Condition[]>([]);
   const [minWeight, setMinWeight] = useState('');
+  const [mode, setMode] = useState<'any' | 'all'>('any');
   const alterCols = study.alters.columns.filter((c) => ![study.mapping.alterEgoId, study.mapping.alterId, study.mapping.alterWave].includes(c.name));
   const add = () => {
     let id = safeName(label).slice(0, 12) || 'sub';
     for (let k = 2; [ALL, ...slices].some((s) => s.id === id); k++) id = `${safeName(label).slice(0, 10)}${k}`;
-    onSlices([...slices, { id, label: label.trim(), tieTypes: types, alterConditions: conds.filter((c) => c.column), minWeight: minWeight.trim() === '' ? null : Number(minWeight) }]);
+    onSlices([...slices, { id, label: label.trim(), tieTypes: types, ...(types && types.length > 1 ? { tieTypeMode: mode } : {}), alterConditions: conds.filter((c) => c.column), minWeight: minWeight.trim() === '' ? null : Number(minWeight) }]);
     setLabel('');
     setTypes(null);
+    setMode('any');
     setConds([]);
     setMinWeight('');
   };
@@ -56,6 +58,15 @@ function SliceEditor({ study, tieTypes, slices, onSlices }: { study: Study; tieT
             </label>
           ))}
         </div>
+        {types && types.length > 1 ? (
+          <>
+            <label>A pair counts if tied</label>
+            <div className="row">
+              <label className="row"><input type="radio" checked={mode === 'any'} onChange={() => setMode('any')} /> in any of these types</label>
+              <label className="row"><input type="radio" checked={mode === 'all'} onChange={() => setMode('all')} /> in all of them</label>
+            </div>
+          </>
+        ) : null}
         <label>Alters kept</label>
         <div style={{ display: 'grid', gap: 6 }}>
           {conds.map((c, i) => {
@@ -93,6 +104,57 @@ function SliceEditor({ study, tieTypes, slices, onSlices }: { study: Study; tieT
         <button className="primary" disabled={!label.trim()} onClick={add}>Add subgroup</button>
       </div>
     </Panel>
+  );
+}
+
+/** Measures of several kinds of tie (P8): multiplexity and overlap, ego–alter (yes/no alter columns) or alter–alter (tie types). */
+function LayerMeasure({ study, tieTypes, slices, onAdd }: { study: Study; tieTypes: string[]; slices: Slice[]; onAdd: (r: MeasureRequest) => void }) {
+  const [kind, setKind] = useState<'multiplexity' | 'layerOverlap' | 'tieLayerOverlap'>('multiplexity');
+  const [cols, setCols] = useState<string[]>([]);
+  const [stat, setStat] = useState<'mean' | 'shareMulti'>('mean');
+  const [a, setA] = useState<string | null>(null);
+  const [b, setB] = useState<string | null>(null);
+  const [sliceId, setSliceId] = useState('all');
+  const alterCols = study.alters.columns.filter((c) => c.kind === 'numeric' && ![study.mapping.alterEgoId, study.mapping.alterId, study.mapping.alterWave].includes(c.name)).map((c) => c.name);
+  const choices = kind === 'tieLayerOverlap' ? tieTypes : alterCols;
+  const spec: MeasureSpec | null = kind === 'multiplexity' ? (cols.length >= 2 ? { kind, columns: cols, stat } : null) : a && b && a !== b ? { kind, a, b } : null;
+  return (
+    <div className="map">
+      <label>Measure</label>
+      <select value={kind} onChange={(e) => { setKind(e.target.value as typeof kind); setA(null); setB(null); }}>
+        <option value="multiplexity">Multiplexity: kinds of tie between ego and each alter</option>
+        <option value="layerOverlap">Overlap of two kinds of ego–alter tie</option>
+        <option value="tieLayerOverlap" disabled={tieTypes.length < 2}>Overlap of two alter–alter tie types</option>
+      </select>
+      {kind === 'multiplexity' ? (
+        <>
+          <label>Yes/no alter columns, one per kind of tie</label>
+          <select multiple value={cols} onChange={(e) => setCols([...e.target.selectedOptions].map((o) => o.value))}>
+            {alterCols.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <label>Summary</label>
+          <select value={stat} onChange={(e) => setStat(e.target.value as typeof stat)}>
+            <option value="mean">Mean kinds of tie per alter</option>
+            <option value="shareMulti">Share of alters tied more than one way</option>
+          </select>
+        </>
+      ) : (
+        <>
+          <label>{kind === 'layerOverlap' ? 'First yes/no alter column' : 'First tie type'}</label>
+          <ColumnSelect value={a} columns={choices} onChange={setA} none="(choose)" />
+          <label>{kind === 'layerOverlap' ? 'Second yes/no alter column' : 'Second tie type'}</label>
+          <ColumnSelect value={b} columns={choices} onChange={setB} none="(choose)" />
+        </>
+      )}
+      <label>Subgroup</label>
+      <select value={sliceId} onChange={(e) => setSliceId(e.target.value)}>
+        {[ALL, ...slices].map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+      </select>
+      <span />
+      <div><button className="primary" disabled={!spec} onClick={() => spec && onAdd({ spec, sliceId })}>Add this measure</button></div>
+      <span />
+      <span className="muted small">The name generators of an EgoCraft interview (gen_…) are yes/no columns of this kind.</span>
+    </div>
   );
 }
 
@@ -219,7 +281,7 @@ export function MeasuresView({ study, onStudy, slices, onSlices, measures, onMea
     onMeasures(has(kind, sliceId) ? measures.filter((m) => !(m.sliceId === sliceId && same(m.spec, spec))) : [...measures, { spec, sliceId }]);
     onResults(null);
   };
-  const variableMeasures = measures.filter((m) => ['composition', 'diversity', 'similarity', 'yulesQ'].includes(m.spec.kind));
+  const variableMeasures = measures.filter((m) => ['composition', 'diversity', 'similarity', 'yulesQ', 'multiplexity', 'layerOverlap', 'tieLayerOverlap'].includes(m.spec.kind));
   const noTies = !study.ties;
   const compute = () => {
     try {
@@ -276,6 +338,8 @@ export function MeasuresView({ study, onStudy, slices, onSlices, measures, onMea
           <p className="muted">None yet. For example: mean age of alters, share who are kin, diversity of race, or the E-I index of ego and alters on gender.</p>
         )}
         <VariableMeasure study={study} slices={slices} onAdd={(r) => { onMeasures([...measures, r]); onResults(null); }} />
+        <h3 style={{ marginTop: 16 }}>Several kinds of tie</h3>
+        <LayerMeasure study={study} tieTypes={nets.tieTypes} slices={slices} onAdd={(r) => { onMeasures([...measures, r]); onResults(null); }} />
       </Panel>
       <Panel title="Alter pairs with no answer">
         <p className="muted">Some surveys ask about only some pairs of alters (for example the first ten alters), or people skip the question.</p>

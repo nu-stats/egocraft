@@ -69,3 +69,33 @@ test('column names are Stata-safe and unique', () => {
   assert.deepEqual(res.table.columns.map((c) => c.name).slice(2), ['size', 'size_2']);
   assert.ok(columnIndex(res.table, 'size_2') > 0);
 });
+
+test('several kinds of tie: multiplexity, overlap, and "tied in all of these types"', () => {
+  const s = sampleStudy(new Date('2026-10-24T12:00:00Z'));
+  const both: Slice = { id: 'kinfriend', label: 'Kin and friend', tieTypes: ['kin', 'friend'], tieTypeMode: 'all', alterConditions: [], minWeight: null };
+  const either: Slice = { ...both, id: 'kinorfriend', tieTypeMode: 'any' };
+  const req: MeasureRequest[] = [
+    { spec: { kind: 'ties' }, sliceId: 'kinfriend' },
+    { spec: { kind: 'ties' }, sliceId: 'kinorfriend' },
+    { spec: { kind: 'tieMultiplexity' }, sliceId: 'all' },
+    { spec: { kind: 'tieLayerOverlap', a: 'kin', b: 'friend' }, sliceId: 'all' },
+  ];
+  const res = computeMeasures(s, req, [both, either]);
+  let some = false;
+  for (const r of res.table.rows) {
+    assert.ok((r[2] as number) <= (r[3] as number), 'tied as both is never more than tied as either');
+    if ((r[2] as number) > 0) some = true;
+    if (r[4] !== null) assert.ok((r[4] as number) >= 0 && (r[4] as number) <= 1);
+  }
+  assert.ok(some, 'the sample has pairs tied as both kin and friend');
+  // Ego–alter layers from yes/no columns, made here from relation.
+  const A = s.alters;
+  const rel = A.columns.findIndex((c) => c.name === 'relation');
+  const alters = { ...A, columns: [...A.columns, { name: 'is_kin', kind: 'numeric' as const }, { name: 'is_close', kind: 'numeric' as const }], rows: A.rows.map((r) => [...r, r[rel] === 1 ? 1 : 0, (r[A.columns.findIndex((c) => c.name === 'closeness')] as number) >= 3 ? 1 : 0]) };
+  const s2 = { ...s, alters };
+  const r2 = computeMeasures(s2, [{ spec: { kind: 'multiplexity', columns: ['is_kin', 'is_close'], stat: 'mean' }, sliceId: 'all' }, { spec: { kind: 'layerOverlap', a: 'is_kin', b: 'is_close' }, sliceId: 'all' }], []);
+  for (const r of r2.table.rows) {
+    if (r[2] !== null) assert.ok((r[2] as number) >= 0 && (r[2] as number) <= 2);
+    if (r[3] !== null) assert.ok((r[3] as number) >= 0 && (r[3] as number) <= 1);
+  }
+});

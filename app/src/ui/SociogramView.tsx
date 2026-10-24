@@ -92,6 +92,7 @@ export function SociogramView({ study, slices, notify, layouts, onLayouts }: { s
   const [sort, setSort] = useState<SortKey>({ kind: 'measure', measure: 'size' });
   const [descending, setDescending] = useState(true);
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [perType, setPerType] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   if (!study.egos.rows.length) return <div className="empty">Import your files first.</div>;
   if (!nets) return <div className="empty">Choose the columns first.</div>;
@@ -102,8 +103,8 @@ export function SociogramView({ study, slices, notify, layouts, onLayouts }: { s
   const current = (egoKey && nets.byKey.get(egoKey)) || nets.egos.find((n) => n.alters.length >= 5) || nets.egos[0]!;
   const set = <K extends keyof SociogramOptions>(k: K, v: SociogramOptions[K]) => setOpts((o) => ({ ...o, [k]: v }));
 
-  const draw = (net: EgoNetwork, positions?: Positions, extra?: { marked?: Set<string>; width?: number; height?: number; title?: string }) => {
-    const data = sociogramData(study, net, slice);
+  const draw = (net: EgoNetwork, positions?: Positions, extra?: { marked?: Set<string>; width?: number; height?: number; title?: string; slice?: Slice }) => {
+    const data = sociogramData(study, net, extra?.slice ?? slice);
     const o = { ...opts, title: extra?.title ?? opts.title ?? '' };
     return sociogramDrawing({ study, data, positions: positions ?? placeNodes(study, data, o, net.id), opts: o, tieTypes: nets.tieTypes, marked: extra?.marked, width: extra?.width, height: extra?.height });
   };
@@ -119,7 +120,12 @@ export function SociogramView({ study, slices, notify, layouts, onLayouts }: { s
     const pos = new Map(auto);
     for (const [id, p] of Object.entries(layouts[current.id] ?? {})) pos.set(id, p);
     if (drag) pos.set(drag.id, { x: drag.x, y: drag.y });
-    svgs = [draw(current, pos, { title: opts.title || caption(current), width: 900, height: 620 })];
+    if (perType && nets.tieTypes.length > 1) {
+      // One panel per tie type (P8.4), all in the same layout.
+      size = { w: 520, h: 440 };
+      cols = 2;
+      svgs = nets.tieTypes.map((t) => draw(current, pos, { title: `${caption(current)}: ${t}`, width: size.w, height: size.h, slice: { ...slice, id: `${slice.id}-${t}`, tieTypes: [t], tieTypeMode: 'any' } }));
+    } else svgs = [draw(current, pos, { title: opts.title || caption(current), width: 900, height: 620 })];
   } else if (mode === 'waves') {
     const pos = new Map(sharedPositions(study, sameEgo, slice, opts, current.id));
     for (const [id, p] of Object.entries(layouts[current.id] ?? {})) pos.set(id, p);
@@ -250,6 +256,7 @@ export function SociogramView({ study, slices, notify, layouts, onLayouts }: { s
           <label className="row"><input type="checkbox" checked={opts.showEgo} onChange={(e) => set('showEgo', e.target.checked)} /> Show the ego</label>
           <label className="row"><input type="checkbox" checked={opts.widthByStrength} onChange={(e) => set('widthByStrength', e.target.checked)} /> Line width by tie strength</label>
           <label className="row"><input type="checkbox" checked={opts.styleByType} onChange={(e) => set('styleByType', e.target.checked)} /> Color lines by tie type</label>
+          {mode === 'one' && nets.tieTypes.length > 1 ? <label className="row"><input type="checkbox" checked={perType} onChange={(e) => setPerType(e.target.checked)} /> A separate panel for each tie type</label> : null}
         </div>
       </Panel>
       <Panel
@@ -272,7 +279,7 @@ export function SociogramView({ study, slices, notify, layouts, onLayouts }: { s
         }
         title={mode === 'grid' ? `${svgs.length} egos` : undefined}
       >
-        {mode === 'one' ? (
+        {mode === 'one' && svgs.length === 1 ? (
           <>
             <div
               ref={box}
