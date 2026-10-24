@@ -3,7 +3,8 @@
 import type { DataTable } from '../core/data.ts';
 import type { Mapping, Study } from '../core/study.ts';
 import { mappingProblems, withHistory } from '../core/study.ts';
-import { ColumnSelect, Panel } from './common.tsx';
+import { applyMapping, readSavedColumns, savedColumns } from '../export/recipe.ts';
+import { ColumnSelect, download, fileBytes, Panel, pickFile } from './common.tsx';
 
 type Role = { key: keyof Mapping; label: string; help: string; required?: boolean };
 
@@ -58,6 +59,25 @@ export function MappingView({ study, onStudy, goNext }: { study: Study; onStudy:
     <div className="page">
       <h1>Which column is which?</h1>
       <p className="muted">EgoCraft guessed from the column names and contents. Check each one; required parts are marked *.</p>
+      <div className="row">
+        <button onClick={() => download(`${study.name} columns.egocraft-columns`.replace(/[\/:*?"<>|]/g, ' '), JSON.stringify(savedColumns(study), null, 2), 'application/json')}>Save these choices</button>
+        <button
+          onClick={async () => {
+            const f = await pickFile('.egocraft-columns,.json');
+            if (!f) return;
+            try {
+              const r = applyMapping(study, readSavedColumns(new TextDecoder().decode(await fileBytes(f))).mapping);
+              onStudy(r.study);
+              window.alert(`Used ${r.used.length} saved choice${r.used.length === 1 ? '' : 's'}.${r.missing.length ? ` Not in these files: ${r.missing.join(', ')}.` : ''}`);
+            } catch (e) {
+              window.alert((e as Error).message);
+            }
+          }}
+        >
+          Use saved choices
+        </button>
+        <span className="muted small">For the next wave or a similar study: the same choices, where the columns have the same names. A recipe file works too.</span>
+      </div>
       <div className="grid2">
         <Panel title={`Ego file: ${study.egos.name}`}>
           <Roles roles={EGO} table={study.egos} mapping={study.mapping} set={set} />

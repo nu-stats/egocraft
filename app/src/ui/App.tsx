@@ -8,6 +8,7 @@ import type { Results } from '../measures/measures.ts';
 import type { Project } from '../project.ts';
 import { newProject, projectFromJson, projectToJson } from '../project.ts';
 import { sampleStudy } from '../sample/sample.ts';
+import { applyRecipe, readRecipe } from '../export/recipe.ts';
 import { ChecksView } from './ChecksView.tsx';
 import type { Notify } from './common.tsx';
 import { download, fileBytes, Panel, pickFile } from './common.tsx';
@@ -94,6 +95,22 @@ function StudyView({ project, onProject, notify, go, kept }: { project: Project 
                 }}
               >
                 Save as a file
+              </button>
+              <button
+                title="Use the column choices, fixes, subgroups and measures of an earlier analysis (egocraft_recipe.json from a results ZIP) on this study's data"
+                onClick={async () => {
+                  const f = await pickFile('.json');
+                  if (!f) return;
+                  try {
+                    const r = applyRecipe(project!, readRecipe(new TextDecoder().decode(await fileBytes(f))));
+                    onProject(r.project);
+                    window.alert(['Recipe used.', ...r.done, ...(r.todo.length ? ['', 'Still to do by hand:', ...r.todo] : [])].join('\n'));
+                  } catch (e) {
+                    notify((e as Error).message, 'error');
+                  }
+                }}
+              >
+                Rerun a recipe
               </button>
               <button onClick={() => { if (window.confirm('Close this study? Save it as a file first if you want to keep it.')) onProject(null); }}>Close</button>
             </>

@@ -7,11 +7,12 @@ import { mappingProblems } from '../core/study.ts';
 import { csvOf, dtaOf, savOf, xlsxOf } from '../export/export.ts';
 import { buildNetworks } from '../network/networks.ts';
 import { longForm, pairsForm, wideForm } from '../reshape/forms.ts';
+import { alterMeasures } from '../measures/alters.ts';
 import type { Notify } from './common.tsx';
 import { download, Panel, TablePreview } from './common.tsx';
 import { MergePanel } from './MergePanel.tsx';
 
-type Tab = 'egos' | 'alters' | 'ties' | 'long' | 'wide' | 'pairs';
+type Tab = 'egos' | 'alters' | 'ties' | 'long' | 'wide' | 'pairs' | 'alterResults';
 
 const TABS: { id: Tab; label: string; explain: string }[] = [
   { id: 'egos', label: 'Egos', explain: 'The ego file as it is now (after any fixes).' },
@@ -19,6 +20,7 @@ const TABS: { id: Tab; label: string; explain: string }[] = [
   { id: 'ties', label: 'Ties', explain: 'The tie file as it is now.' },
   { id: 'long', label: 'Long', explain: 'One row per alter, with the ego’s variables attached (ego_…). For alter-level models.' },
   { id: 'wide', label: 'Wide', explain: 'One row per ego, with each alter’s answers spread across columns (alter1_…, alter2_…).' },
+  { id: 'alterResults', label: 'Alter results', explain: 'One row per alter: degree, betweenness and group among the other alters (ego left out), and the alter’s share of the ego’s constraint. For models of alters nested in egos.' },
   { id: 'pairs', label: 'Pairs', explain: 'One row per pair of alters within each ego: whether they are tied (1, 0, or empty when not known), the strength, and both alters’ variables.' },
 ];
 
@@ -52,6 +54,7 @@ export function DataView({ study, onStudy, notify }: { study: Study; onStudy: (s
     if (!nets) return null;
     if (tab === 'long') return longForm(study, nets);
     if (tab === 'wide') return wideForm(study, nets);
+    if (tab === 'alterResults') return alterMeasures(study, undefined, nets);
     return pairsForm(study, nets);
   }, [tab, study, nets]);
   if (!study.egos.rows.length) return <div className="empty">Import your files first.</div>;
@@ -62,7 +65,7 @@ export function DataView({ study, onStudy, notify }: { study: Study; onStudy: (s
       <Panel>
         <div className="tabs">
           {TABS.map((t) => (
-            <button key={t.id} className={t.id === tab ? 'on' : ''} onClick={() => setTab(t.id)} disabled={!ready && ['long', 'wide', 'pairs'].includes(t.id)}>
+            <button key={t.id} className={t.id === tab ? 'on' : ''} onClick={() => setTab(t.id)} disabled={!ready && ['long', 'wide', 'pairs', 'alterResults'].includes(t.id)}>
               {t.label}
             </button>
           ))}
