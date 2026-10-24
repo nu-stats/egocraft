@@ -1,7 +1,7 @@
 # Checking EgoCraft's numbers
 
 EgoCraft's measures are checked three ways: by hand on small networks, by
-an independent program on the made-up sample study, and by the code
+independent programs on the made-up sample study, and by the code
 EgoCraft writes for each user (the do-file and R script in every results
 bundle).
 
@@ -46,6 +46,21 @@ It printed "EgoCraft check passed: Stata gives the same numbers."
 The first run found a bug in the do-file itself: egos who named nobody are
 not in the long file, so their recomputed counts were missing rather than 0.
 The do-file now fills them with 0, as it already did for size.
+
+## 4. R with igraph, 2026-10-24
+
+The R script EgoCraft writes (`egocraft_check.R`) was run in R 4.4.3 with
+igraph 2.3.4 on the sample study's results bundle. It rebuilds each ego's
+network (the ego tied to every alter, with closeness and tie strength as
+weights), recomputes size, density and igraph's `constraint()`, and compares
+them with EgoCraft's results file. It printed "EgoCraft check passed: igraph
+gives the same numbers."
+
+| Measure | Largest difference |
+|---|---|
+| Size | 0 |
+| Density | 4.9 × 10⁻¹¹ |
+| Constraint (weighted) | 4.9 × 10⁻¹¹ |
 
 ## Rerunning the checks
 

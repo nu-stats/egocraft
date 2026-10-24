@@ -51,7 +51,7 @@ Updated 2026-10-24. Task ids are those in `ROADMAP.md`.
   Blau, IQV, entropy), ego–alter similarity (E-I, share same, mean absolute
   difference), alter–alter Yule's Q. Alter-level results (P3.11): not yet
   exported separately.
-- P3.12 Checked by hand, against networkx and in Stata
+- P3.12 Checked by hand, against networkx, in Stata and with igraph in R
   (`docs/validation.md`). Against egor: not yet.
 
 ## Phase 4: Sociograms — core done
@@ -70,8 +70,8 @@ Updated 2026-10-24. Task ids are those in `ROADMAP.md`.
 
 - P5.1 One row per ego (and wave): CSV, Excel, .dta, .sav. P5.2 Codebook.
 - P5.3 Recipe (JSON, not yet replayable from the interface), Stata do-file
-  (merge + cross-check), R script (igraph cross-check). The R script has not
-  yet been run in R with igraph installed.
+  (merge + cross-check, passed in Stata 19), R script (igraph cross-check,
+  passed in R 4.4.3 with igraph 2.3.4).
 - P5.4 Missing-pair rule and note; per-measure missing report: not yet.
 - P5.5 Descriptive table (CSV, Excel, Stata, SPSS); Word, LaTeX and APA
   layout: not yet. P5.6 Methods paragraph: not yet.
