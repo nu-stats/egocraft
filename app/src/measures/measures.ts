@@ -80,7 +80,7 @@ export const MEASURE_INFO: Record<MeasureKind, Info> = {
 };
 
 const STAT_SHORT: Record<CompositionStat, string> = { mean: 'mean', sd: 'sd', median: 'med', min: 'min', max: 'max', share: 'pct', shareAtLeast: 'pctge', count: 'n' };
-const STAT_NAME: Record<CompositionStat, string> = { mean: 'Mean', sd: 'Standard deviation', median: 'Median', min: 'Smallest', max: 'Largest', share: 'Share', shareAtLeast: 'Share at least', count: 'Number' };
+const STAT_NAME: Record<CompositionStat, string> = { mean: 'Mean', sd: 'SD of', median: 'Median', min: 'Lowest', max: 'Highest', share: 'Share with', shareAtLeast: 'Share with', count: 'Number with' };
 const DIV_SHORT: Record<DiversityIndex, string> = { blau: 'blau', iqv: 'iqv', entropy: 'entropy', categories: 'ncat' };
 const SIM_SHORT: Record<SimilarityIndex, string> = { ei: 'ei', sameShare: 'same', meanAbsDiff: 'absdiff' };
 

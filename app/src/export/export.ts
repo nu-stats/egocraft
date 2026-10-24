@@ -13,8 +13,14 @@ import type { Slice } from '../network/networks.ts';
 import { writeDta, writeSav } from '../io/statFiles.js';
 import type { StatDataset } from '../io/statFiles.js';
 import { toCsv, toXlsx } from '../io/table.ts';
+import { buildNetworks } from '../network/networks.ts';
+import { buildDocx } from './docx.ts';
+import type { Block } from './docx.ts';
+import { methodsPlainText, methodsText } from './methods.ts';
+import { descriptives, descriptivesBlock, descriptivesLatex, missingReport } from './tables.ts';
 
-export const APP_VERSION = '0.1.0';
+import { APP_VERSION } from '../version.ts';
+export { APP_VERSION };
 
 export function csvOf(t: DataTable): string {
   return toCsv({ columns: t.columns.map((c) => c.name), rows: t.rows });
@@ -244,10 +250,24 @@ export interface Bundle {
   pairs: DataTable;
 }
 
+/** The Word file: the descriptive table, then the methods draft and its references. */
+export function publicationBlocks(_b: Bundle, d: ReturnType<typeof descriptives>, m: ReturnType<typeof methodsText>): Block[] {
+  return [
+    descriptivesBlock(d),
+    { kind: 'heading', text: 'Method (draft)' },
+    ...m.paragraphs.map((text) => ({ kind: 'para' as const, text })),
+    { kind: 'heading', text: 'References' },
+    ...m.references.map((text) => ({ kind: 'para' as const, text })),
+  ];
+}
+
 /** Everything in one ZIP file. */
 export function bundleZip(b: Bundle, now = new Date()): Uint8Array {
   const recipe = makeRecipe(b.study, b.slices, b.measures, now);
   const codebook = codebookTable(b.results.codebook);
+  const nets = buildNetworks(b.study);
+  const d = descriptives(b.study, b.results, b.measures);
+  const methods = methodsText(b.study, b.measures, b.slices, nets);
   const readme = [
     `EgoCraft ${APP_VERSION}: results for ${b.study.name}`,
     `Made ${now.toISOString().slice(0, 16).replace('T', ' ')} UTC.`,
@@ -260,6 +280,10 @@ export function bundleZip(b: Bundle, now = new Date()): Uint8Array {
     'egocraft_check.do                    Stata: merge into your survey file, and recompute size and composition',
     'egocraft_check.R                     R: recompute size, density and constraint with igraph',
     'egocraft_recipe.json                 every step, to rerun the same analysis in EgoCraft',
+    'egocraft_tables.docx                 Word: the descriptive table (APA style) and a draft methods section',
+    'egocraft_table.tex                   LaTeX: the descriptive table (booktabs)',
+    'egocraft_methods.txt                 the draft methods section as plain text, with references',
+    'egocraft_missing.csv                 for each measure, how many egos have a value and how much is missing',
     '',
     ...b.results.notes,
   ].join('\n');
@@ -276,6 +300,10 @@ export function bundleZip(b: Bundle, now = new Date()): Uint8Array {
     'egocraft_check.do': strToU8(stataDoFile(b, now)),
     'egocraft_check.R': strToU8(rScript(b.study, b.results, b.measures, now)),
     'egocraft_recipe.json': strToU8(JSON.stringify(recipe, null, 2) + '\n'),
+    'egocraft_tables.docx': buildDocx(publicationBlocks(b, d, methods), `EgoCraft: ${b.study.name}`),
+    'egocraft_table.tex': strToU8(descriptivesLatex(d)),
+    'egocraft_methods.txt': strToU8(methodsPlainText(methods)),
+    'egocraft_missing.csv': strToU8(csvOf(missingReport(b.study, b.results, b.measures, b.slices, nets))),
   };
   return zipSync(files, { level: 6 });
 }

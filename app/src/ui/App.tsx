@@ -161,7 +161,7 @@ export function App() {
         goNext={next}
       />
     );
-  else body = <ResultsView study={study} results={results} measures={project.measures} slices={project.slices} />;
+  else body = <ResultsView study={study} results={results} measures={project.measures} slices={project.slices} notify={notify} />;
 
   return (
     <div className="shell">
