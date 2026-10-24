@@ -1,0 +1,33 @@
+{
+  "name": "egocraft",
+  "private": true,
+  "version": "0.1.0",
+  "description": "EgoCraft: egocentric (personal) network analysis. Import ego, alter and alter-tie files, check and merge them, draw each person's network, compute the measures you choose, and export one row per ego with the code that produced it. Runs locally; your data never leaves your computer.",
+  "type": "module",
+  "license": "MIT OR Apache-2.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "node server/serve.mjs",
+    "test": "node --test --test-reporter=spec \"src/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit -p .",
+    "examples": "node scripts/write-examples.ts",
+    "ci": "npm run typecheck && npm test && npm run build"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "0.9.12",
+    "fflate": "0.8.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "5.9.3",
+    "vite": "6.4.3"
+  }
+}

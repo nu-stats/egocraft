@@ -1,0 +1,191 @@
+// The app: eight steps down the side, one screen each.
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Study } from '../core/study.ts';
+import { mappingProblems, newStudy } from '../core/study.ts';
+import { runChecks } from '../import/checks.ts';
+import type { Results } from '../measures/measures.ts';
+import type { Project } from '../project.ts';
+import { newProject, projectFromJson, projectToJson } from '../project.ts';
+import { sampleStudy } from '../sample/sample.ts';
+import { ChecksView } from './ChecksView.tsx';
+import type { Notify } from './common.tsx';
+import { download, fileBytes, Panel, pickFile } from './common.tsx';
+import { DataView } from './DataView.tsx';
+import { ImportView } from './ImportView.tsx';
+import { MappingView } from './MappingView.tsx';
+import { MeasuresView } from './MeasuresView.tsx';
+import { ResultsView } from './ResultsView.tsx';
+import { SociogramView } from './SociogramView.tsx';
+import { loadCurrent, saveCurrent } from './store.ts';
+
+type Step = 'study' | 'import' | 'columns' | 'checks' | 'data' | 'sociograms' | 'measures' | 'results';
+const STEPS: { id: Step; label: string }[] = [
+  { id: 'study', label: 'Study' },
+  { id: 'import', label: 'Import' },
+  { id: 'columns', label: 'Columns' },
+  { id: 'checks', label: 'Checks' },
+  { id: 'data', label: 'Data' },
+  { id: 'sociograms', label: 'Sociograms' },
+  { id: 'measures', label: 'Measures' },
+  { id: 'results', label: 'Results' },
+];
+
+function StudyView({ project, onProject, notify, go }: { project: Project | null; onProject: (p: Project | null) => void; notify: Notify; go: (s: Step) => void }) {
+  const open = async () => {
+    const f = await pickFile('.egocraft,.json');
+    if (!f) return;
+    try {
+      onProject(projectFromJson(new TextDecoder().decode(await fileBytes(f))));
+      notify(`Opened ${f.name}.`, 'ok');
+    } catch (e) {
+      notify((e as Error).message, 'error');
+    }
+  };
+  const s = project?.study;
+  return (
+    <div className="page">
+      <h1>EgoCraft</h1>
+      <p>
+        Personal network analysis, start to finish: bring in your ego, alter and tie files, check the IDs, draw each person’s network, compute the measures you choose for any subgroup, and save one row per person to merge back into your survey data, with the Stata and R code that produced it.
+      </p>
+      <p className="muted">Everything stays on this computer. EgoCraft has no account, sends nothing anywhere, and keeps your open study in this browser between visits.</p>
+      <div className="grid3">
+        <Panel title="Try it">
+          <p className="muted">A made-up study: 200 people in two survey waves, the people they named, and who knows whom.</p>
+          <button className="primary" onClick={() => { onProject(newProject(sampleStudy())); notify('Opened the sample study.', 'ok'); go('checks'); }}>Open the sample study</button>
+        </Panel>
+        <Panel title="Your own data">
+          <p className="muted">CSV, Excel, Stata, SPSS or R files, in three files, two files, or one wide survey file.</p>
+          <button onClick={() => { onProject(newProject(newStudy('My study'))); go('import'); }}>Start a new study</button>
+        </Panel>
+        <Panel title="A saved study">
+          <p className="muted">An .egocraft file saved earlier.</p>
+          <button onClick={open}>Open a study file</button>
+        </Panel>
+      </div>
+      {s ? (
+        <Panel
+          title="This study"
+          actions={
+            <>
+              <button onClick={() => download(`${s.name.replace(/[\\/:*?"<>|]/g, ' ')}.egocraft`, projectToJson(project!), 'application/json')}>Save as a file</button>
+              <button onClick={() => { if (window.confirm('Close this study? Save it as a file first if you want to keep it.')) onProject(null); }}>Close</button>
+            </>
+          }
+        >
+          <div className="map">
+            <label htmlFor="study-name">Name</label>
+            <input id="study-name" type="text" value={s.name} onChange={(e) => onProject({ ...project!, study: { ...s, name: e.target.value } })} />
+            <label>Ego file</label>
+            <span>{s.egos.rows.length ? `${s.egos.name}: ${s.egos.rows.length.toLocaleString('en-US')} rows` : 'not yet'}</span>
+            <label>Alter file</label>
+            <span>{s.alters.rows.length ? `${s.alters.name}: ${s.alters.rows.length.toLocaleString('en-US')} rows` : 'not yet'}</span>
+            <label>Tie file</label>
+            <span>{s.ties ? `${s.ties.name}: ${s.ties.rows.length.toLocaleString('en-US')} rows` : 'none'}</span>
+            <label>Saved</label>
+            <span>{new Date(s.modifiedAt).toLocaleString()}</span>
+          </div>
+        </Panel>
+      ) : null}
+    </div>
+  );
+}
+
+export function App() {
+  const [project, setProject] = useState<Project | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [step, setStep] = useState<Step>('study');
+  const [results, setResults] = useState<Results | null>(null);
+  const [toast, setToast] = useState<{ text: string; kind: 'ok' | 'error' } | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    loadCurrent().then((p) => {
+      setProject(p);
+      setLoaded(true);
+    });
+  }, []);
+  useEffect(() => {
+    if (!loaded) return;
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      saveCurrent(project).catch((e: Error) => setToast({ text: `Could not keep the study in this browser: ${e.message}. Save it as a file.`, kind: 'error' }));
+    }, 600);
+  }, [project, loaded]);
+
+  const notify: Notify = (text, kind = 'ok') => {
+    setToast({ text, kind });
+    window.setTimeout(() => setToast((t) => (t?.text === text ? null : t)), kind === 'error' ? 9000 : 3500);
+  };
+  const onProject = (p: Project | null) => {
+    setProject(p);
+    setResults(null);
+  };
+  const onStudy = (s: Study) => {
+    setProject((p) => (p ? { ...p, study: { ...s, modifiedAt: new Date().toISOString() } } : p));
+    setResults(null);
+  };
+  const go = (s: Step) => setStep(s);
+  const next = () => setStep(STEPS[Math.min(STEPS.length - 1, STEPS.findIndex((x) => x.id === step) + 1)]!.id);
+
+  const status = useMemo(() => {
+    const s = project?.study;
+    if (!s || !s.egos.rows.length) return null;
+    const missing = mappingProblems(s).length;
+    const errors = missing ? 0 : runChecks(s).filter((i) => i.severity === 'error').length;
+    return { missing, errors };
+  }, [project]);
+
+  const study = project?.study;
+  let body;
+  if (!loaded) body = <div className="empty">Opening…</div>;
+  else if (step === 'study' || !project || !study) body = <StudyView project={project} onProject={onProject} notify={notify} go={go} />;
+  else if (step === 'import') body = <ImportView study={study} onStudy={onStudy} notify={notify} goNext={next} />;
+  else if (step === 'columns') body = <MappingView study={study} onStudy={onStudy} goNext={next} />;
+  else if (step === 'checks') body = <ChecksView study={study} onStudy={onStudy} notify={notify} goNext={next} />;
+  else if (step === 'data') body = <DataView study={study} />;
+  else if (step === 'sociograms') body = <SociogramView study={study} slices={project.slices} notify={notify} />;
+  else if (step === 'measures')
+    body = (
+      <MeasuresView
+        study={study}
+        onStudy={onStudy}
+        slices={project.slices}
+        onSlices={(slices) => setProject({ ...project, slices })}
+        measures={project.measures}
+        onMeasures={(measures) => setProject({ ...project, measures })}
+        results={results}
+        onResults={setResults}
+        notify={notify}
+        goNext={next}
+      />
+    );
+  else body = <ResultsView study={study} results={results} measures={project.measures} slices={project.slices} />;
+
+  return (
+    <div className="shell">
+      <nav className="side" aria-label="Steps">
+        <div className="brand">
+          <img src="./icon.svg" alt="" />
+          EgoCraft
+        </div>
+        {STEPS.map((s, i) => (
+          <button key={s.id} className={`step${step === s.id ? ' on' : ''}`} onClick={() => setStep(s.id)} disabled={s.id !== 'study' && !project}>
+            <span className="n">{i + 1}</span>
+            {s.label}
+            {s.id === 'columns' && status?.missing ? <span className="badge chip warning">{status.missing}</span> : null}
+            {s.id === 'checks' && status && !status.missing ? <span className={`badge chip ${status.errors ? 'error' : 'ok'}`}>{status.errors || '✓'}</span> : null}
+            {s.id === 'results' && results ? <span className="badge chip ok">✓</span> : null}
+          </button>
+        ))}
+        <div className="foot small muted">
+          {study ? <span>{study.name}</span> : <span>No study open</span>}
+          <span>Your data stays on this computer.</span>
+        </div>
+      </nav>
+      <main className="main">{body}</main>
+      {toast ? <div className={`toast ${toast.kind === 'error' ? 'error' : ''}`} role="status">{toast.text}</div> : null}
+    </div>
+  );
+}

@@ -1,0 +1,14 @@
+# Dependencies and builds
+app/node_modules/
+app/dist/
+# Pinokio runtime files
+logs/
+cache/
+env/
+ENVIRONMENT
+# Study data never goes in the repository
+*.egocraft
+studies/
+.DS_Store
+Thumbs.db
+.claude/
