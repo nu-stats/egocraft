@@ -34,3 +34,5 @@ Build and test tools (not shipped): vite, typescript.
 | Yule's Q | Yule, G. U. (1900). On the association of attributes in statistics. *Philosophical Transactions of the Royal Society A* 194. |
 | Spring layout | Fruchterman, T. M. J., and Reingold, E. M. (1991). Graph drawing by force-directed placement. *Software: Practice and Experience* 21(11). |
 | Colors | Okabe, M., and Ito, K. (2008). Color universal design. |
+| Interview screens (name generators, name interpreters, closeness circles, alter–alter tie questions) | McCarty, C., Lubbers, M. J., Vacca, R., and Molina, J. L. (2019). *Conducting Personal Network Research*. Guilford Press. Perry, B. L., Pescosolido, B. A., and Borgatti, S. P. (2018). *Egocentric Network Analysis*. Cambridge University Press. Designed from these published descriptions; no other program's screens, formats or code. |
+| Encryption | AES-GCM and PBKDF2 from the browser's Web Crypto standard (W3C). |

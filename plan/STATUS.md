@@ -89,6 +89,43 @@ Updated 2026-10-24 (second round). Task ids are those in `ROADMAP.md`.
   the ZIP).
 - Still open: replaying a recipe from the interface (P5.3).
 
-## Phases 6–12
+## Phase 6: Data collection — done
+
+- P6.1 Questionnaire designer (Interviews step): screens in order, wording,
+  consent text, questions and answer choices, limits (most people in all, per
+  name generator); checks before use; a ready-made example; try it without
+  saving; save and open as a file.
+- P6.2 Name generators: a growing list typed in; one person named on several
+  generators is kept once (gen_<id> = 1 for each); last wave's names offered.
+- P6.3 Name interpreters: questions about each person; sorting into boxes;
+  a scale.
+- P6.4 Who knows whom by drawing (drag one person onto another, or tap two)
+  or by piles; completed tie screens give every pair 1 or 0, unreached ones
+  leave pairs unknown.
+- P6.5 Closeness circles (2–6 rings).
+- P6.6 Interviewer and self-completion modes, touch first (iPad), working
+  offline; every answer saved at once.
+- P6.7 Interviews into the three tables with labels from the wording, the
+  mapping filled in; names left out unless asked for; the questionnaire goes
+  into the results ZIP as text and as a file.
+- P6.8 Interviews kept only encrypted on the device (AES-256-GCM, PBKDF2,
+  passphrase never stored); carried by encrypted file; files from several
+  devices put together, each interview counted once.
+- Checked end to end in the browser at iPad size (768 × 1024): consent,
+  questions, two generators, boxes by tap and by drag, closeness, ties by tap
+  and by drag, end; then the study passed the checks and the measures matched
+  a hand count.
+- Not yet: tried on a real iPad (needs an https address, see README); piles
+  screen only tested in code; translations.
+
+## iPad and offline — done
+
+- The built app stores itself on first visit (service worker) and opens with
+  no network (tested by stopping the server and reloading); manifest and Home
+  Screen icons; touch-sized controls; storage kept where the browser allows,
+  and a reminder to save the study as a file.
+- Needs an https web address for iPads: hosting not chosen yet.
+
+## Phases 7–12
 
 Not started.

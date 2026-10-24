@@ -3,8 +3,16 @@
 EgoCraft is a clean-room app for personal (egocentric) network research. A
 personal network is one person (the **ego**), the people they name (the
 **alters**), and which of those people know each other (**alter–alter
-ties**). EgoCraft takes you from the survey files to the published table:
+ties**). EgoCraft takes you from the interview, or the survey files, to the
+published table:
 
+0. **Interviews** (optional): collect the data in EgoCraft itself, on a
+   laptop or an iPad, with or without a network. Design the questionnaire
+   (name generators, questions about each person, boxes and scales,
+   closeness circles, who knows whom), then run interviews by touch, asked by
+   an interviewer or filled in by the respondent. Interviews are kept
+   encrypted on the device, carried to the analysis computer in an encrypted
+   file, and turned into a study in one step.
 1. **Import** the ego, alter and tie files (CSV, Excel, Stata, SPSS or R), in
    three files, two files, or one wide survey file.
 2. **Columns**: EgoCraft guesses which column is the ego ID, the alter ID,
@@ -39,7 +47,8 @@ Everything runs on your own computer. Files are read in the browser, studies
 are kept in the browser and in the `.egocraft` files you save, and nothing is
 sent anywhere.
 
-> **Status: Phases 0–4 work and Phase 5 (results) is nearly done.** See [ROADMAP.md](ROADMAP.md) for what comes
+> **Status: Phases 0–4 and 6 work, Phase 5 (results) is nearly done, and it
+> runs offline on an iPad.** See [ROADMAP.md](ROADMAP.md) for what comes
 > next (built-in interviewing, waves, multilayer ties, missing data, links to
 > StatCraft, QualCraft and Husky Eye View) and [plan/STATUS.md](plan/STATUS.md)
 > for the detailed state. How the numbers were checked is in
