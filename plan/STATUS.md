@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-24. Task ids are those in `ROADMAP.md`.
+Updated 2026-10-24 (second round). Task ids are those in `ROADMAP.md`.
 
 ## Phase 0: Setup — done
 
@@ -32,13 +32,19 @@ Updated 2026-10-24. Task ids are those in `ROADMAP.md`.
   alters, tie rows with missing or unknown IDs, self-ties, repeated pairs
   with disagreeing strengths, ties without a type).
 - P1.5 Import report: the Checks step lists every step and saves it as text.
-- P1.6 Pseudonyms on import: not yet.
+- P1.6 Pseudonyms: done (Checks step). Word alter IDs and name-like
+  columns are found; values become A01, A02 … within each ego (the same in
+  every wave, ties changed to match) or R001 … for egos; the key is saved
+  encrypted with a passphrase (AES-256-GCM, PBKDF2-SHA-256) or not kept;
+  any text column can be removed.
 - P1.7 Project file (.egocraft) and browser autosave: done.
 
 ## Phase 2: Merge and reshape — done
 
 - P2.1–P2.4 Long, wide, per-ego networks, pairs form.
-- P2.5 Merging outside data into the ego or alter file: not yet.
+- P2.5 Merging outside data into the ego or alter file: done (Data step),
+  matched on suggested ID columns, with a preview and a stop on IDs used
+  twice in the outside file.
 - P2.6 Export of every form to CSV, Excel, .dta and .sav: done.
 
 ## Phase 3: Measures — done
@@ -54,7 +60,7 @@ Updated 2026-10-24. Task ids are those in `ROADMAP.md`.
 - P3.12 Checked by hand, against networkx, in Stata and with igraph in R
   (`docs/validation.md`). Against egor: not yet.
 
-## Phase 4: Sociograms — core done
+## Phase 4: Sociograms — done
 
 - P4.1 Spring, circle, rings and sectors layouts; ego shown or hidden.
 - P4.2 Color and size by any alter variable, line width by strength, line
@@ -63,18 +69,25 @@ Updated 2026-10-24. Task ids are those in `ROADMAP.md`.
 - P4.4 Side by side: a grid sorted by size, density, effective size,
   constraint or an ego variable.
 - P4.5 Shared layout across waves, new alters marked.
-- P4.6 Colorblind-safe palette and legend. P4.7 SVG and PNG (3×); PDF not
-  yet. P4.8 Dragging nodes: not yet.
+- P4.6 Colorblind-safe palette and legend.
+- P4.7 SVG, PNG (3×) and vector PDF (one page; grids on one page).
+- P4.8 Drag alters into place (mouse or touch); hand placements kept per ego
+  for every wave and saved in the study file, with an undo.
 
-## Phase 5: Results — partly done
+## Phase 5: Results — mostly done
 
 - P5.1 One row per ego (and wave): CSV, Excel, .dta, .sav. P5.2 Codebook.
 - P5.3 Recipe (JSON, not yet replayable from the interface), Stata do-file
   (merge + cross-check, passed in Stata 19), R script (igraph cross-check,
   passed in R 4.4.3 with igraph 2.3.4).
-- P5.4 Missing-pair rule and note; per-measure missing report: not yet.
-- P5.5 Descriptive table (CSV, Excel, Stata, SPSS); Word, LaTeX and APA
-  layout: not yet. P5.6 Methods paragraph: not yet.
+- P5.4 Missing-pair rule, and a report per measure: egos with a value, why
+  the others have none, mean share of pairs not known and of answers
+  missing.
+- P5.5 Descriptive table in APA style, overall or split by an ego variable:
+  Word (.docx, checked in Word), LaTeX (booktabs), HTML, and as data.
+- P5.6 Draft methods section with an APA reference list (Results step and
+  the ZIP).
+- Still open: replaying a recipe from the interface (P5.3).
 
 ## Phases 6–12
 

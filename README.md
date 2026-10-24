@@ -12,13 +12,16 @@ ties**). EgoCraft takes you from the survey files to the published table:
 3. **Checks**: duplicate IDs, alters whose ego is missing, lost leading zeros,
    ties to alters nobody named, pairs entered twice. Each problem comes with
    a plain explanation and a one-click fix, and every fix goes in the import
-   report.
+   report. Names can be replaced with codes (A01, A02 …), with the name key
+   kept in a separate file locked with a passphrase, or not kept at all.
 4. **Data**: the files merged into long (one row per alter), wide (one row
    per ego) and pairs (one row per pair of alters) forms, ready for Stata,
-   SPSS, R or Excel.
+   SPSS, R or Excel. Variables from another file (the rest of your survey)
+   can be added to the ego or alter file, matched on IDs.
 5. **Sociograms**: one ego, one ego across waves in the same layout, or a
    grid of egos side by side; alters colored and sized by any variable, line
-   width by tie strength, line style by tie type; saved as SVG or PNG.
+   width by tie strength, line style by tie type; drag alters into place;
+   saved as SVG, PNG or vector PDF.
 6. **Measures** you choose, for the whole network or any **subgroup** (kin
    only, one tie type, alters 65 and older, strong ties only): size, density,
    degree, ego and alter betweenness, effective size, efficiency, constraint,
@@ -26,16 +29,17 @@ ties**). EgoCraft takes you from the survey files to the published table:
    (Blau, IQV, entropy), ego–alter similarity (E-I index) and alter–alter
    homophily (Yule's Q).
 7. **Results**: one row per ego (and wave) to merge back into your survey
-   data, with a codebook, a descriptive table, a Stata do-file that merges the
-   results and recomputes them as a check, an R script that recomputes them
-   with igraph, and a recipe of every step.
+   data, with a codebook, an APA-style descriptive table for Word or LaTeX, a
+   draft methods section with references, a report of how much each measure
+   rests on missing answers, a Stata do-file that merges the results and
+   recomputes them as a check, an R script that recomputes them with igraph,
+   and a recipe of every step.
 
 Everything runs on your own computer. Files are read in the browser, studies
 are kept in the browser and in the `.egocraft` files you save, and nothing is
 sent anywhere.
 
-> **Status: Phases 0–3 work, Phase 4 (sociograms) has its core, Phase 5
-> (results) is partly done.** See [ROADMAP.md](ROADMAP.md) for what comes
+> **Status: Phases 0–4 work and Phase 5 (results) is nearly done.** See [ROADMAP.md](ROADMAP.md) for what comes
 > next (built-in interviewing, waves, multilayer ties, missing data, links to
 > StatCraft, QualCraft and Husky Eye View) and [plan/STATUS.md](plan/STATUS.md)
 > for the detailed state. How the numbers were checked is in
