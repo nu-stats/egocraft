@@ -145,7 +145,7 @@ export function App() {
   else if (step === 'columns') body = <MappingView study={study} onStudy={onStudy} goNext={next} />;
   else if (step === 'checks') body = <ChecksView study={study} onStudy={onStudy} notify={notify} goNext={next} />;
   else if (step === 'data') body = <DataView study={study} onStudy={onStudy} notify={notify} />;
-  else if (step === 'sociograms') body = <SociogramView study={study} slices={project.slices} notify={notify} />;
+  else if (step === 'sociograms') body = <SociogramView study={study} slices={project.slices} notify={notify} layouts={project.layouts ?? {}} onLayouts={(layouts) => setProject({ ...project, layouts })} />;
   else if (step === 'measures')
     body = (
       <MeasuresView

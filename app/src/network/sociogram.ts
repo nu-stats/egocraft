@@ -6,6 +6,8 @@
 import type { Column } from '../core/data.ts';
 import { categoryOf, columnIndex, numberOf } from '../core/data.ts';
 import type { Study } from '../core/study.ts';
+import type { Drawing, Shape } from './drawing.ts';
+import { drawingToSvg } from './drawing.ts';
 import type { LayoutKind, Positions } from './layout.ts';
 import { layout } from './layout.ts';
 import type { EgoNetwork, Slice } from './networks.ts';
@@ -71,7 +73,6 @@ export function placeNodes(study: Study, data: SociogramData, opts: SociogramOpt
   });
 }
 
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const fmt = (v: number) => (Math.round(v * 10) / 10).toString();
 
 export interface Legend {
@@ -129,8 +130,8 @@ export interface DrawInput {
   marked?: Set<string>;
 }
 
-/** The SVG text. Labels are escaped; nothing outside is referenced. */
-export function sociogramSvg(d: DrawInput): string {
+/** The drawing as shapes (for SVG and PDF). Labels are plain text; nothing outside is referenced. */
+export function sociogramDrawing(d: DrawInput): Drawing {
   const { study, data, positions, opts } = d;
   const A = study.alters;
   const W = d.width ?? 640;
@@ -156,15 +157,14 @@ export function sociogramSvg(d: DrawInput): string {
   const labelOf = (n: { id: string; row: number }) => (opts.labelBy === 'none' ? '' : lj >= 0 ? (categoryOf(A.columns[lj], A.rows[n.row]![lj]) ?? '') : n.id);
   const typeIndex = (t: string) => Math.max(0, d.tieTypes.indexOf(t));
   const maxW = Math.max(1, ...data.edges.map((e) => e.weight));
-  const out: string[] = [];
-  out.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12">`);
-  out.push(`<rect width="${W}" height="${H}" fill="#ffffff"/>`);
-  if (opts.title) out.push(`<text x="10" y="20" font-size="15" font-weight="600" fill="#1d2733">${esc(opts.title)}</text>`);
+  const ink = '#1d2733';
+  const out: Shape[] = [{ kind: 'rect', x: 0, y: 0, w: W, h: H, fill: '#ffffff' }];
+  if (opts.title) out.push({ kind: 'text', x: 10, y: 20, text: opts.title, size: 15, bold: true, fill: ink });
   const pos = (id: string) => positions.get(id) ?? { x: 0, y: 0 };
   if (opts.showEgo)
     for (const n of data.nodes) {
       const p = pos(n.id);
-      out.push(`<line x1="${fmt(px(0))}" y1="${fmt(py(0))}" x2="${fmt(px(p.x))}" y2="${fmt(py(p.y))}" stroke="#c9d1d9" stroke-width="1"/>`);
+      out.push({ kind: 'line', x1: px(0), y1: py(0), x2: px(p.x), y2: py(p.y), stroke: '#c9d1d9', width: 1 });
     }
   for (const e of data.edges) {
     const a = pos(data.nodes[e.a]!.id);
@@ -182,32 +182,37 @@ export function sociogramSvg(d: DrawInput): string {
       const color = opts.styleByType && t ? PALETTE[(ti + 2) % PALETTE.length]! : '#57606a';
       const dash = opts.styleByType && t ? DASHES[ti % DASHES.length]! : '';
       const width = opts.widthByStrength ? 1 + (2.5 * e.weight) / maxW : 1.5;
-      out.push(`<line x1="${fmt(px(a.x) + ox)}" y1="${fmt(py(a.y) + oy)}" x2="${fmt(px(b.x) + ox)}" y2="${fmt(py(b.y) + oy)}" stroke="${color}" stroke-width="${fmt(width)}"${dash ? ` stroke-dasharray="${dash}"` : ''} stroke-linecap="round"/>`);
+      out.push({ kind: 'line', x1: px(a.x) + ox, y1: py(a.y) + oy, x2: px(b.x) + ox, y2: py(b.y) + oy, stroke: color, width, ...(dash ? { dash } : {}) });
     });
   }
-  if (opts.showEgo) out.push(`<circle cx="${fmt(px(0))}" cy="${fmt(py(0))}" r="10" fill="#1d2733"/><text x="${fmt(px(0))}" y="${fmt(py(0) + 24)}" text-anchor="middle" fill="#1d2733" font-weight="600">Ego</text>`);
+  if (opts.showEgo) {
+    out.push({ kind: 'circle', cx: px(0), cy: py(0), r: 10, fill: ink });
+    out.push({ kind: 'text', x: px(0), y: py(0) + 24, text: 'Ego', size: 12, bold: true, anchor: 'middle', fill: ink });
+  }
   for (const n of data.nodes) {
     const p = pos(n.id);
     const c = colors(n.row);
     const r = radius(n.row);
     const faded = d.faded?.has(n.id);
-    out.push(`<circle cx="${fmt(px(p.x))}" cy="${fmt(py(p.y))}" r="${fmt(r)}" fill="${c.color}" stroke="#ffffff" stroke-width="1.5"${faded ? ' opacity="0.3"' : ''}/>`);
-    if (d.marked?.has(n.id)) out.push(`<circle cx="${fmt(px(p.x))}" cy="${fmt(py(p.y))}" r="${fmt(r + 4)}" fill="none" stroke="#D55E00" stroke-width="2"/>`);
+    out.push({ kind: 'circle', cx: px(p.x), cy: py(p.y), r, fill: c.color, stroke: '#ffffff', strokeWidth: 1.5, id: n.id, ...(faded ? { opacity: 0.3 } : {}) });
+    if (d.marked?.has(n.id)) out.push({ kind: 'circle', cx: px(p.x), cy: py(p.y), r: r + 4, fill: null, stroke: '#D55E00', strokeWidth: 2 });
     const label = labelOf(n);
-    if (label) out.push(`<text x="${fmt(px(p.x))}" y="${fmt(py(p.y) - r - 4)}" text-anchor="middle" fill="#1d2733"${faded ? ' opacity="0.4"' : ''}>${esc(label)}</text>`);
+    if (label) out.push({ kind: 'text', x: px(p.x), y: py(p.y) - r - 4, text: label, size: 12, anchor: 'middle', fill: ink, ...(faded ? { opacity: 0.4 } : {}) });
   }
   // Legend
   let ly = (opts.title ? 30 : 0) + 20;
   const lx = W - legendW + 10;
   const head = (t: string) => {
     const short = t.length > 26 ? `${t.slice(0, 25).trimEnd()}…` : t;
-    out.push(`<text x="${lx}" y="${ly}" font-weight="600" fill="#1d2733">${esc(short)}<title>${esc(t)}</title></text>`);
+    out.push({ kind: 'text', x: lx, y: ly, text: short, size: 12, bold: true, fill: ink, ...(short !== t ? { title: t } : {}) });
     ly += 18;
   };
+  const item = (x: number, text: string) => out.push({ kind: 'text', x, y: ly, text, size: 12, fill: ink });
   if (opts.colorBy && colors.legend.length) {
     head(A.columns[columnIndex(A, opts.colorBy)]?.label ?? opts.colorBy);
     for (const c of colors.legend) {
-      out.push(`<circle cx="${lx + 6}" cy="${ly - 4}" r="6" fill="${c.color}"/><text x="${lx + 18}" y="${ly}" fill="#1d2733">${esc(c.label)}</text>`);
+      out.push({ kind: 'circle', cx: lx + 6, cy: ly - 4, r: 6, fill: c.color });
+      item(lx + 18, c.label);
       ly += 17;
     }
     ly += 8;
@@ -215,24 +220,32 @@ export function sociogramSvg(d: DrawInput): string {
   if (opts.styleByType && d.tieTypes.length) {
     head('Tie type');
     d.tieTypes.forEach((t, ti) => {
-      out.push(`<line x1="${lx}" y1="${ly - 4}" x2="${lx + 14}" y2="${ly - 4}" stroke="${PALETTE[(ti + 2) % PALETTE.length]}" stroke-width="2.5"${DASHES[ti % DASHES.length] ? ` stroke-dasharray="${DASHES[ti % DASHES.length]}"` : ''}/><text x="${lx + 18}" y="${ly}" fill="#1d2733">${esc(t)}</text>`);
+      const dash = DASHES[ti % DASHES.length]!;
+      out.push({ kind: 'line', x1: lx, y1: ly - 4, x2: lx + 14, y2: ly - 4, stroke: PALETTE[(ti + 2) % PALETTE.length]!, width: 2.5, ...(dash ? { dash } : {}) });
+      item(lx + 18, t);
       ly += 17;
     });
     ly += 8;
   }
   if (sj >= 0) {
     head(`Size: ${A.columns[sj]?.label ?? opts.sizeBy}`);
-    out.push(`<text x="${lx}" y="${ly}" fill="#57606a">${fmt(sLo)} (small) – ${fmt(sHi)} (large)</text>`);
+    out.push({ kind: 'text', x: lx, y: ly, text: `${fmt(sLo)} (small) – ${fmt(sHi)} (large)`, size: 12, fill: '#57606a' });
     ly += 22;
   }
   if (d.faded?.size || d.marked?.size) {
     head('Since last wave');
-    out.push(`<circle cx="${lx + 6}" cy="${ly - 4}" r="6" fill="#888" opacity="0.3"/><text x="${lx + 18}" y="${ly}" fill="#1d2733">dropped</text>`);
+    out.push({ kind: 'circle', cx: lx + 6, cy: ly - 4, r: 6, fill: '#888888', opacity: 0.3 });
+    item(lx + 18, 'dropped');
     ly += 17;
-    out.push(`<circle cx="${lx + 6}" cy="${ly - 4}" r="7" fill="none" stroke="#D55E00" stroke-width="2"/><text x="${lx + 18}" y="${ly}" fill="#1d2733">new</text>`);
+    out.push({ kind: 'circle', cx: lx + 6, cy: ly - 4, r: 7, fill: null, stroke: '#D55E00', strokeWidth: 2 });
+    item(lx + 18, 'new');
   }
-  out.push('</svg>');
-  return out.join('');
+  return { width: W, height: H, shapes: out, frame: { cx, cy, scale: plot / 2.2 } };
+}
+
+/** The SVG text. */
+export function sociogramSvg(d: DrawInput): string {
+  return drawingToSvg(sociogramDrawing(d));
 }
 
 /** Whether an alter passes a slice's conditions (for listing alters beside a drawing). */

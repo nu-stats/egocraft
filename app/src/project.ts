@@ -12,6 +12,8 @@ export interface Project {
   study: Study;
   slices: Slice[];
   measures: MeasureRequest[];
+  /** Alter positions placed by hand, per ego ID (shared by all waves): alter ID → x, y. */
+  layouts?: Record<string, Record<string, { x: number; y: number }>>;
 }
 
 export const DEFAULT_MEASURES: MeasureRequest[] = [
@@ -51,5 +53,6 @@ export function projectFromJson(text: string): Project {
     study: studyFromJson(JSON.stringify(p.study)),
     slices: Array.isArray(p.slices) ? p.slices : [],
     measures: Array.isArray(p.measures) ? p.measures : DEFAULT_MEASURES,
+    ...(p.layouts && typeof p.layouts === 'object' ? { layouts: p.layouts } : {}),
   };
 }

@@ -1,7 +1,11 @@
 // Step 6: sociograms. One ego, one ego across waves (same layout), or a
-// grid of egos sorted by a variable or a measure; saved as SVG or PNG.
+// grid of egos sorted by a variable or a measure; saved as SVG, PNG or
+// PDF. In "one ego", alters can be dragged into place; the layout is kept.
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { drawingToPdf } from '../export/pdf.ts';
+import type { Drawing } from '../network/drawing.ts';
+import { combineDrawings, drawingToSvg } from '../network/drawing.ts';
 import { columnIndex, numberOf } from '../core/data.ts';
 import type { Study } from '../core/study.ts';
 import { mappingProblems } from '../core/study.ts';
@@ -10,7 +14,7 @@ import type { LayoutKind, Positions } from '../network/layout.ts';
 import type { EgoNetwork, Slice, StudyNetworks } from '../network/networks.ts';
 import { ALL, buildNetworks, graphFor } from '../network/networks.ts';
 import type { SociogramData, SociogramOptions } from '../network/sociogram.ts';
-import { DEFAULT_OPTIONS, placeNodes, sociogramData, sociogramSvg } from '../network/sociogram.ts';
+import { DEFAULT_OPTIONS, placeNodes, sociogramData, sociogramDrawing } from '../network/sociogram.ts';
 import type { Notify } from './common.tsx';
 import { ColumnSelect, download, Panel } from './common.tsx';
 
@@ -60,13 +64,6 @@ async function svgToPng(svg: string, scale = 2): Promise<Uint8Array> {
   }
 }
 
-/** Several drawings in one SVG, in a grid. */
-function combine(svgs: string[], cols: number, w: number, h: number): string {
-  const rows = Math.ceil(svgs.length / cols);
-  const parts = svgs.map((s, i) => s.replace('<svg ', `<svg x="${(i % cols) * w}" y="${Math.floor(i / cols) * h}" `));
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${cols * w}" height="${rows * h}" viewBox="0 0 ${cols * w} ${rows * h}"><rect width="100%" height="100%" fill="#ffffff"/>${parts.join('')}</svg>`;
-}
-
 type SortKey = { kind: 'ego'; column: string } | { kind: 'measure'; measure: 'size' | 'density' | 'constraint' | 'effsize' };
 
 function sortValue(study: Study, net: EgoNetwork, slice: Slice, key: SortKey): number | null {
@@ -81,7 +78,9 @@ function sortValue(study: Study, net: EgoNetwork, slice: Slice, key: SortKey): n
   return S.constraint(g);
 }
 
-export function SociogramView({ study, slices, notify }: { study: Study; slices: Slice[]; notify: Notify }) {
+type Layouts = Record<string, Record<string, { x: number; y: number }>>;
+
+export function SociogramView({ study, slices, notify, layouts, onLayouts }: { study: Study; slices: Slice[]; notify: Notify; layouts: Layouts; onLayouts: (l: Layouts) => void }) {
   const ready = study.egos.rows.length > 0 && mappingProblems(study).length === 0;
   const nets: StudyNetworks | null = useMemo(() => (ready ? buildNetworks(study) : null), [study, ready]);
   const [mode, setMode] = useState<Mode>('one');
@@ -92,6 +91,8 @@ export function SociogramView({ study, slices, notify }: { study: Study; slices:
   const [count, setCount] = useState(12);
   const [sort, setSort] = useState<SortKey>({ kind: 'measure', measure: 'size' });
   const [descending, setDescending] = useState(true);
+  const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
+  const box = useRef<HTMLDivElement>(null);
   if (!study.egos.rows.length) return <div className="empty">Import your files first.</div>;
   if (!nets) return <div className="empty">Choose the columns first.</div>;
   const slice = [ALL, ...slices].find((s) => s.id === sliceId) ?? ALL;
@@ -104,19 +105,24 @@ export function SociogramView({ study, slices, notify }: { study: Study; slices:
   const draw = (net: EgoNetwork, positions?: Positions, extra?: { marked?: Set<string>; width?: number; height?: number; title?: string }) => {
     const data = sociogramData(study, net, slice);
     const o = { ...opts, title: extra?.title ?? opts.title ?? '' };
-    return sociogramSvg({ study, data, positions: positions ?? placeNodes(study, data, o, net.id), opts: o, tieTypes: nets.tieTypes, marked: extra?.marked, width: extra?.width, height: extra?.height });
+    return sociogramDrawing({ study, data, positions: positions ?? placeNodes(study, data, o, net.id), opts: o, tieTypes: nets.tieTypes, marked: extra?.marked, width: extra?.width, height: extra?.height });
   };
 
-  let svgs: string[] = [];
+  let svgs: Drawing[] = [];
   let cols = 1;
   let size = { w: 640, h: 520 };
   const sameEgo = nets.egos.filter((n) => n.id === current.id);
   const caption = (n: EgoNetwork) => `${egoName(n)}${slice.id === 'all' ? '' : ` (${slice.label})`}`;
   if (mode === 'one') {
-    const pos = sameEgo.length > 1 ? sharedPositions(study, sameEgo, slice, opts, current.id) : undefined;
+    const auto = sameEgo.length > 1 ? sharedPositions(study, sameEgo, slice, opts, current.id) : placeNodes(study, sociogramData(study, current, slice), opts, current.id);
+    // Alters placed by hand keep their place; the one being dragged follows the pointer.
+    const pos = new Map(auto);
+    for (const [id, p] of Object.entries(layouts[current.id] ?? {})) pos.set(id, p);
+    if (drag) pos.set(drag.id, { x: drag.x, y: drag.y });
     svgs = [draw(current, pos, { title: opts.title || caption(current) })];
   } else if (mode === 'waves') {
-    const pos = sharedPositions(study, sameEgo, slice, opts, current.id);
+    const pos = new Map(sharedPositions(study, sameEgo, slice, opts, current.id));
+    for (const [id, p] of Object.entries(layouts[current.id] ?? {})) pos.set(id, p);
     size = { w: 520, h: 440 };
     cols = Math.min(3, sameEgo.length);
     svgs = sameEgo.map((n, i) => {
@@ -131,7 +137,19 @@ export function SociogramView({ study, slices, notify }: { study: Study; slices:
     cols = 3;
     svgs = scored.slice(0, count).map(({ n, v }) => draw(n, undefined, { width: size.w, height: size.h, title: `${caption(n)}: ${Math.round(v! * 1000) / 1000}` }));
   }
-  const whole = svgs.length === 1 ? svgs[0]! : combine(svgs, cols, size.w, size.h);
+  const whole = svgs.length === 1 ? svgs[0]! : combineDrawings(svgs, cols);
+  const wholeSvg = drawingToSvg(whole);
+  const placed = Object.keys(layouts[current.id] ?? {}).length;
+  const toLayout = (e: { clientX: number; clientY: number }) => {
+    const svg = box.current?.querySelector('svg');
+    const f = svgs[0]?.frame;
+    if (!svg || !f) return null;
+    const r = svg.getBoundingClientRect();
+    const sx = ((e.clientX - r.left) / r.width) * whole.width;
+    const sy = ((e.clientY - r.top) / r.height) * whole.height;
+    const clamp = (v: number) => Math.max(-1.05, Math.min(1.05, v));
+    return { x: clamp((sx - f.cx) / f.scale), y: clamp((sy - f.cy) / f.scale) };
+  };
   const base = `${study.name} sociogram${mode === 'one' ? ` ${current.id}${current.wave ? `-w${current.wave}` : ''}` : mode === 'waves' ? ` ${current.id} waves` : ' grid'}`.replace(/[\\/:*?"<>|]/g, ' ');
   const shown = nets.egos.filter((n) => !filter || n.id.includes(filter.trim()));
 
@@ -237,11 +255,12 @@ export function SociogramView({ study, slices, notify }: { study: Study; slices:
       <Panel
         actions={
           <>
-            <button onClick={() => download(`${base}.svg`, whole, 'image/svg+xml')}>Save SVG</button>
+            <button onClick={() => download(`${base}.svg`, wholeSvg, 'image/svg+xml')}>Save SVG</button>
+            <button onClick={() => download(`${base}.pdf`, drawingToPdf(whole, base), 'application/pdf')}>Save PDF</button>
             <button
               onClick={async () => {
                 try {
-                  download(`${base}.png`, await svgToPng(whole, 3), 'image/png');
+                  download(`${base}.png`, await svgToPng(wholeSvg, 3), 'image/png');
                 } catch (e) {
                   notify((e as Error).message, 'error');
                 }
@@ -254,10 +273,50 @@ export function SociogramView({ study, slices, notify }: { study: Study; slices:
         title={mode === 'grid' ? `${svgs.length} egos` : undefined}
       >
         {mode === 'one' ? (
-          <div className="svgbox" dangerouslySetInnerHTML={{ __html: whole }} />
+          <>
+            <div
+              ref={box}
+              className="svgbox"
+              style={{ touchAction: 'none', cursor: drag ? 'grabbing' : 'default' }}
+              onPointerDown={(e) => {
+                const id = (e.target as Element).getAttribute?.('data-id');
+                const p = id ? toLayout(e) : null;
+                if (!id || !p) return;
+                (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+                setDrag({ id, ...p });
+              }}
+              onPointerMove={(e) => {
+                if (!drag) return;
+                const p = toLayout(e);
+                if (p) setDrag({ id: drag.id, ...p });
+              }}
+              onPointerUp={() => {
+                if (!drag) return;
+                onLayouts({ ...layouts, [current.id]: { ...(layouts[current.id] ?? {}), [drag.id]: { x: drag.x, y: drag.y } } });
+                setDrag(null);
+              }}
+              onPointerCancel={() => setDrag(null)}
+              dangerouslySetInnerHTML={{ __html: wholeSvg }}
+            />
+            <div className="row" style={{ marginTop: 8 }}>
+              <span className="muted small">Drag an alter to move it; it stays there, in every wave, and in the saved study.</span>
+              {placed ? (
+                <button
+                  className="link"
+                  onClick={() => {
+                    const next = { ...layouts };
+                    delete next[current.id];
+                    onLayouts(next);
+                  }}
+                >
+                  Undo hand placement ({placed} alter{placed === 1 ? '' : 's'})
+                </button>
+              ) : null}
+            </div>
+          </>
         ) : (
           <div className="thumbs" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${mode === 'waves' ? 380 : 300}px, 1fr))` }}>
-            {svgs.map((s, i) => <div key={i} className="svgbox" dangerouslySetInnerHTML={{ __html: s }} />)}
+            {svgs.map((s, i) => <div key={i} className="svgbox" dangerouslySetInnerHTML={{ __html: drawingToSvg(s) }} />)}
           </div>
         )}
         {mode === 'waves' ? <p className="muted small" style={{ marginTop: 8 }}>Alters keep their place in every wave. A ring marks an alter named for the first time.</p> : null}
