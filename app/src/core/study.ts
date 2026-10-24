@@ -38,6 +38,11 @@ export type MissingPairRule = 'noTie' | 'observed';
 export interface Settings {
   /** Alter pairs whose tie is not known: counted as no tie, or left out of density. */
   missingPairs: MissingPairRule;
+  /**
+   * Leave measures that rest on alter pairs empty for an ego when more than
+   * this share of its pairs (0–1) is not known. Null = never.
+   */
+  maxUnknownShare?: number | null;
 }
 
 export interface HistoryEntry {

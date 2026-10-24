@@ -367,6 +367,15 @@ function value(ctx: Context, net: EgoNetwork, g: Graph, spec: MeasureSpec): numb
   }
 }
 
+const PAIR_MEASURES: MeasureKind[] = ['ties', 'density', 'weightedDensity', 'meanDegree', 'maxDegree', 'egoBetweenness', 'egoBetweennessNorm', 'meanAlterBetweenness', 'maxAlterBetweenness', 'effectiveSize', 'efficiency', 'constraint', 'hierarchy', 'components', 'largestComponentShare', 'isolates', 'yulesQ', 'tieMultiplexity', 'tieLayerOverlap'];
+
+/** Whether the missing-data cutoff (P9.2) leaves this measure empty for this ego. */
+function tooMuchUnknown(study: Study, g: Graph, spec: MeasureSpec): boolean {
+  const cut = study.settings.maxUnknownShare;
+  if (cut === null || cut === undefined || !PAIR_MEASURES.includes(spec.kind) || g.n < 2) return false;
+  return S.unknownPairs(g) / ((g.n * (g.n - 1)) / 2) > cut;
+}
+
 /** A yes in a yes/no column: a number other than 0, or yes / true / y. */
 function isYes(v: Cell | undefined): boolean {
   if (isMissing(v)) return false;
@@ -438,7 +447,8 @@ export function computeMeasures(study: Study, requests: MeasureRequest[], slices
     const row: Cell[] = [egoRow[columnIndex(study.egos, m.egoId)] ?? net.id];
     if (waveCol) row.push(egoRow[columnIndex(study.egos, m.egoWave!)] ?? net.wave);
     for (const p of plan) {
-      const v = value(ctx, net, graphs.get(p.slice.id)!, p.r.spec);
+      const g = graphs.get(p.slice.id)!;
+      const v = tooMuchUnknown(study, g, p.r.spec) ? null : value(ctx, net, g, p.r.spec);
       row.push(v === null || !Number.isFinite(v) ? null : Math.round(v * 1e10) / 1e10);
     }
     return row;

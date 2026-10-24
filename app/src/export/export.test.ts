@@ -42,7 +42,7 @@ test('the bundle has every file, and the measures file reads back with its label
   const results = computeMeasures(s, measures, [], nets);
   const zip = bundleZip({ study: s, results, measures, slices: [], long: longForm(s, nets), pairs: pairsForm(s, nets) }, now);
   const files = unzipSync(zip);
-  assert.deepEqual(Object.keys(files).sort(), ['README.txt', 'egocraft_alter_measures.csv', 'egocraft_change.csv', 'egocraft_check.R', 'egocraft_check.do', 'egocraft_codebook.csv', 'egocraft_long.csv', 'egocraft_long.dta', 'egocraft_measures.csv', 'egocraft_measures.dta', 'egocraft_measures.sav', 'egocraft_measures.xlsx', 'egocraft_measures_by_wave.csv', 'egocraft_methods.txt', 'egocraft_missing.csv', 'egocraft_pairs.csv', 'egocraft_recipe.json', 'egocraft_table.tex', 'egocraft_tables.docx']);
+  assert.deepEqual(Object.keys(files).sort(), ['README.txt', 'egocraft_alter_measures.csv', 'egocraft_change.csv', 'egocraft_check.R', 'egocraft_check.do', 'egocraft_codebook.csv', 'egocraft_long.csv', 'egocraft_long.dta', 'egocraft_measures.csv', 'egocraft_measures.dta', 'egocraft_measures.sav', 'egocraft_measures.xlsx', 'egocraft_measures_by_wave.csv', 'egocraft_methods.txt', 'egocraft_missing.csv', 'egocraft_missing_summary.csv', 'egocraft_pairs.csv', 'egocraft_recipe.json', 'egocraft_sensitivity.csv', 'egocraft_table.tex', 'egocraft_tables.docx']);
   const back = await readDataFile('m.dta', files['egocraft_measures.dta']!);
   assert.equal(back.rows.length, results.table.rows.length);
   assert.equal(back.columns.find((c) => c.name === 'density')?.label, 'Density');

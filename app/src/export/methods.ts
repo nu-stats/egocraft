@@ -91,7 +91,7 @@ export function methodsText(study: Study, measures: MeasureRequest[], slices: Sl
     }
     const types = nets.tieTypes;
     let p = `For each pair of alters, respondents reported whether the two know each other${types.length > 1 ? ` (tie types: ${types.join(', ')})` : ''}${study.mapping.tieWeight ? ', and how strong the tie is' : ''}.`;
-    if (unknown) p += ` Of ${pairs.toLocaleString('en-US')} alter pairs, ${unknown.toLocaleString('en-US')} (${fmt((100 * unknown) / Math.max(1, pairs), 1)}%) were not asked or not answered; these pairs were ${study.settings.missingPairs === 'noTie' ? 'counted as not tied' : 'left out of the density calculations'}.`;
+    if (unknown) p += ` Of ${pairs.toLocaleString('en-US')} alter pairs, ${unknown.toLocaleString('en-US')} (${fmt((100 * unknown) / Math.max(1, pairs), 1)}%) were not asked or not answered; these pairs were ${study.settings.missingPairs === 'noTie' ? 'counted as not tied' : 'left out of the density calculations'}${study.settings.maxUnknownShare !== null && study.settings.maxUnknownShare !== undefined ? `, and measures built on alter pairs were left missing for egos with more than ${Math.round(study.settings.maxUnknownShare * 100)}% of their pairs unknown` : ''}.`;
     if (study.mapping.egoAlterStrength) p += ` Ego–alter tie strength (${study.mapping.egoAlterStrength}) was used as the weight of ego's ties in effective size and constraint.`;
     paragraphs.push(p);
   } else paragraphs.push('Ties among alters were not collected, so only size and composition measures were computed.');

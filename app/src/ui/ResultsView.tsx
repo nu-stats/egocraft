@@ -15,6 +15,7 @@ import { longForm, pairsForm } from '../reshape/forms.ts';
 import type { Notify } from './common.tsx';
 import { ColumnSelect, download, Panel, TablePreview } from './common.tsx';
 import { SaveButtons } from './DataView.tsx';
+import { missingSummary, sensitivityTable } from '../measures/missing.ts';
 import type { WaveMatch } from './WavesPanel.tsx';
 import { WavesPanel } from './WavesPanel.tsx';
 
@@ -101,6 +102,15 @@ export function ResultsView({ study, results, measures, slices, notify, protocol
       <Panel title="Missing information" actions={<button onClick={() => download(`${base} missing.csv`, csvOf(missing), 'text/csv;charset=utf-8')}>Save CSV</button>}>
         <p className="muted">For each measure: how many egos have a value, why the others don’t, and how much of what the values rest on is missing.</p>
         <TablePreview table={missing} limit={200} showLabels />
+        <h3 style={{ marginTop: 14 }}>The kinds of missing information</h3>
+        <TablePreview table={missingSummary(study, nets!)} limit={200} />
+        {study.ties ? (
+          <>
+            <h3 style={{ marginTop: 14 }}>How much the rule for unknown pairs matters</h3>
+            <p className="muted small">Means over egos with two or more alters. If the columns agree, the choice hardly matters for your study.</p>
+            <TablePreview table={sensitivityTable(study, nets!)} limit={20} showLabels />
+          </>
+        ) : null}
       </Panel>
       <Panel title="Codebook" actions={<button onClick={() => download(`${base} codebook.csv`, csvOf(codebook), 'text/csv;charset=utf-8')}>Save CSV</button>}>
         <div className="tablewrap">

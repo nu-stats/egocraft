@@ -18,6 +18,7 @@ import { buildDocx } from './docx.ts';
 import type { Block } from './docx.ts';
 import { methodsPlainText, methodsText } from './methods.ts';
 import { alterMeasures } from '../measures/alters.ts';
+import { missingSummary, sensitivityTable } from '../measures/missing.ts';
 import type { MatchOverride, MatchRule } from '../waves/waves.ts';
 import { changeTable, measuresWide, transitions } from '../waves/waves.ts';
 import { descriptives, descriptivesBlock, descriptivesLatex, missingReport } from './tables.ts';
@@ -294,6 +295,8 @@ export function bundleZip(b: Bundle, now = new Date()): Uint8Array {
     'egocraft_methods.txt                 the draft methods section as plain text, with references',
     'egocraft_missing.csv                 for each measure, how many egos have a value and how much is missing',
     'egocraft_alter_measures.csv          one row per alter: degree, betweenness, group, share of constraint',
+    'egocraft_missing_summary.csv         the kinds of missing information, counted',
+    'egocraft_sensitivity.csv             key results under each way of handling unknown alter pairs',
     ...(nets.waves.length > 1 ? ['egocraft_change.csv                  change between waves: alters kept, dropped, added, tie churn, change in each measure', 'egocraft_measures_by_wave.csv        the measures with the waves side by side'] : []),
     ...(b.protocol ? ['egocraft_questionnaire.txt           the interview questionnaire: wording, variable names and answer codes'] : []),
     '',
@@ -317,6 +320,8 @@ export function bundleZip(b: Bundle, now = new Date()): Uint8Array {
     'egocraft_methods.txt': strToU8(methodsPlainText(methods)),
     'egocraft_missing.csv': strToU8(csvOf(missingReport(b.study, b.results, b.measures, b.slices, nets))),
     'egocraft_alter_measures.csv': strToU8(csvOf(alterMeasures(b.study, undefined, nets))),
+    'egocraft_missing_summary.csv': strToU8(csvOf(missingSummary(b.study, nets))),
+    ...(b.study.ties ? { 'egocraft_sensitivity.csv': strToU8(csvOf(sensitivityTable(b.study, nets))) } : {}),
     ...(nets.waves.length > 1
       ? {
           'egocraft_change.csv': strToU8(csvOf(changeTable(b.study, transitions(b.study, b.waveMatch?.rule ?? { kind: 'id' }, b.waveMatch?.overrides ?? [], nets), b.results))),

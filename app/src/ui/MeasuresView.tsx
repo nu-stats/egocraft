@@ -350,7 +350,29 @@ export function MeasuresView({ study, onStudy, slices, onSlices, measures, onMea
               {r === 'noTie' ? 'Count them as not tied (the usual practice; lowers density)' : 'Leave them out: density uses answered pairs only'}
             </label>
           ))}
+          <label className="row">
+            <input
+              type="checkbox"
+              checked={study.settings.maxUnknownShare !== null && study.settings.maxUnknownShare !== undefined}
+              onChange={(e) => { onStudy({ ...study, settings: { ...study.settings, maxUnknownShare: e.target.checked ? 0.2 : null } }); onResults(null); }}
+            />
+            <span>
+              Leave measures built on pairs empty for an ego when more than{' '}
+              <input
+                type="number"
+                min={0}
+                max={100}
+                disabled={study.settings.maxUnknownShare === null || study.settings.maxUnknownShare === undefined}
+                value={Math.round((study.settings.maxUnknownShare ?? 0.2) * 100)}
+                onChange={(e) => { onStudy({ ...study, settings: { ...study.settings, maxUnknownShare: Math.max(0, Math.min(100, Number(e.target.value) || 0)) / 100 } }); onResults(null); }}
+                style={{ width: 70 }}
+                aria-label="Percent of pairs not known"
+              />{' '}
+              % of its pairs are not known
+            </span>
+          </label>
         </div>
+        <p className="muted small">The Results step shows how much each choice changes the key results (the sensitivity table).</p>
       </Panel>
       <div className="row">
         <button className="primary" disabled={!measures.length} onClick={compute}>Compute {measures.length} measures</button>
