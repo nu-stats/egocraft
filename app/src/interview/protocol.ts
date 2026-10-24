@@ -198,3 +198,21 @@ export function protocolFromJson(text: string): Protocol {
   if (!Array.isArray(p.screens)) throw new Error('This protocol file is incomplete.');
   return p as Protocol;
 }
+
+/** The questionnaire as plain text, screen by screen, with each variable's name and answer codes, for the codebook. */
+export function protocolText(p: Protocol): string {
+  const L: string[] = [`Questionnaire: ${p.name}`, `Up to ${p.maxAlters} people in all.`, ''];
+  const opts = (o?: Option[]) => (o?.length ? ` Answers: ${o.map((x) => `${x.value} = ${x.label}`).join('; ')}.` : '');
+  p.screens.forEach((s, i) => {
+    L.push(`${i + 1}. ${s.title} (${SCREEN_INFO[s.kind].name})`);
+    L.push(`   ${s.prompt}`);
+    if (s.kind === 'egoForm' || s.kind === 'alterForm')
+      for (const q of s.questions) L.push(`   - ${q.id}: ${q.label} [${q.type}${q.required ? ', required' : ''}]${opts(q.options)}`);
+    if (s.kind === 'nameGenerator') L.push(`   Variable gen_${s.id} = 1 for everyone named here${s.max ? `; up to ${s.max} names` : ''}.`);
+    if (s.kind === 'alterBins' || s.kind === 'alterScale') L.push(`   Variable ${s.variable}: ${s.label}.${opts(s.options)}`);
+    if (s.kind === 'closeness') L.push(`   Variable ${s.variable}: ${s.label} (${s.rings} rings; ${s.rings} = the innermost, closest ring).`);
+    if (s.kind === 'tiesDraw' || s.kind === 'tiesPiles') L.push(`   Tie type "${s.tieType}": every pair of people gets knows = 1 (tied) or 0 (not tied).`);
+    L.push('');
+  });
+  return L.join('\n');
+}

@@ -13,15 +13,17 @@ import type { Notify } from './common.tsx';
 import { download, fileBytes, Panel, pickFile } from './common.tsx';
 import { DataView } from './DataView.tsx';
 import { ImportView } from './ImportView.tsx';
+import { InterviewsView } from './InterviewsView.tsx';
 import { MappingView } from './MappingView.tsx';
 import { MeasuresView } from './MeasuresView.tsx';
 import { ResultsView } from './ResultsView.tsx';
 import { SociogramView } from './SociogramView.tsx';
 import { loadCurrent, saveCurrent } from './store.ts';
 
-type Step = 'study' | 'import' | 'columns' | 'checks' | 'data' | 'sociograms' | 'measures' | 'results';
+type Step = 'study' | 'interviews' | 'import' | 'columns' | 'checks' | 'data' | 'sociograms' | 'measures' | 'results';
 const STEPS: { id: Step; label: string }[] = [
   { id: 'study', label: 'Study' },
+  { id: 'interviews', label: 'Interviews' },
   { id: 'import', label: 'Import' },
   { id: 'columns', label: 'Columns' },
   { id: 'checks', label: 'Checks' },
@@ -130,6 +132,12 @@ export function App() {
   const [toast, setToast] = useState<{ text: string; kind: 'ok' | 'error' } | null>(null);
   const timer = useRef<number | undefined>(undefined);
   const [kept, setKept] = useState<boolean | null>(null);
+  const [update, setUpdate] = useState(false);
+  useEffect(() => {
+    const on = () => setUpdate(true);
+    window.addEventListener('egocraft-update', on);
+    return () => window.removeEventListener('egocraft-update', on);
+  }, []);
 
   useEffect(() => {
     loadCurrent().then((p) => {
@@ -173,6 +181,7 @@ export function App() {
   const study = project?.study;
   let body;
   if (!loaded) body = <div className="empty">Opening…</div>;
+  else if (step === 'interviews') body = <InterviewsView notify={notify} onProject={onProject} goChecks={() => setStep('checks')} />;
   else if (step === 'study' || !project || !study) body = <StudyView project={project} onProject={onProject} notify={notify} go={go} kept={kept} />;
   else if (step === 'import') body = <ImportView study={study} onStudy={onStudy} notify={notify} goNext={next} />;
   else if (step === 'columns') body = <MappingView study={study} onStudy={onStudy} goNext={next} />;
@@ -194,7 +203,7 @@ export function App() {
         goNext={next}
       />
     );
-  else body = <ResultsView study={study} results={results} measures={project.measures} slices={project.slices} notify={notify} />;
+  else body = <ResultsView study={study} results={results} measures={project.measures} slices={project.slices} notify={notify} {...(project.protocol ? { protocol: project.protocol } : {})} />;
 
   return (
     <div className="shell">
@@ -204,7 +213,7 @@ export function App() {
           EgoCraft
         </div>
         {STEPS.map((s, i) => (
-          <button key={s.id} className={`step${step === s.id ? ' on' : ''}`} onClick={() => setStep(s.id)} disabled={s.id !== 'study' && !project}>
+          <button key={s.id} className={`step${step === s.id ? ' on' : ''}`} onClick={() => setStep(s.id)} disabled={s.id !== 'study' && s.id !== 'interviews' && !project}>
             <span className="n">{i + 1}</span>
             {s.label}
             {s.id === 'columns' && status?.missing ? <span className="badge chip warning">{status.missing}</span> : null}
@@ -219,6 +228,11 @@ export function App() {
       </nav>
       <main className="main">{body}</main>
       {toast ? <div className={`toast ${toast.kind === 'error' ? 'error' : ''}`} role="status">{toast.text}</div> : null}
+      {update ? (
+        <div className="toast" role="status" style={{ bottom: 70 }}>
+          A new version of EgoCraft is ready. <button onClick={() => window.location.reload()}>Reload</button>
+        </div>
+      ) : null}
     </div>
   );
 }

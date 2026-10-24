@@ -5,6 +5,7 @@ import type { Study } from './core/study.ts';
 import { studyFromJson } from './core/study.ts';
 import type { MeasureRequest } from './measures/measures.ts';
 import type { Slice } from './network/networks.ts';
+import type { Protocol } from './interview/protocol.ts';
 
 export interface Project {
   format: 'egocraft-project';
@@ -14,6 +15,8 @@ export interface Project {
   measures: MeasureRequest[];
   /** Alter positions placed by hand, per ego ID (shared by all waves): alter ID → x, y. */
   layouts?: Record<string, Record<string, { x: number; y: number }>>;
+  /** The interview questionnaire the study came from, if it was collected in EgoCraft. */
+  protocol?: Protocol;
 }
 
 export const DEFAULT_MEASURES: MeasureRequest[] = [
@@ -54,5 +57,6 @@ export function projectFromJson(text: string): Project {
     slices: Array.isArray(p.slices) ? p.slices : [],
     measures: Array.isArray(p.measures) ? p.measures : DEFAULT_MEASURES,
     ...(p.layouts && typeof p.layouts === 'object' ? { layouts: p.layouts } : {}),
+    ...(p.protocol && typeof p.protocol === 'object' ? { protocol: p.protocol } : {}),
   };
 }

@@ -116,3 +116,11 @@ test('the device vault and the transfer file open only with the passphrase', asy
   assert.deepEqual(back.interviews[0], iv);
   await assert.rejects(interviewsFromFile(file, 'nope nope nope'), /Wrong passphrase/);
 });
+
+test('the questionnaire as text lists every variable with its wording and codes', async () => {
+  const { protocolText } = await import('./protocol.ts');
+  const t = protocolText(p);
+  assert.match(t, /alter_gender: Is this person a woman, a man, or another gender\? \[choice\] Answers: 1 = Woman; 2 = Man; 3 = Another gender\./);
+  assert.match(t, /Variable gen_discuss = 1/);
+  assert.match(t, /Tie type "knows"/);
+});

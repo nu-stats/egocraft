@@ -9,13 +9,14 @@ import { methodsPlainText, methodsText } from '../export/methods.ts';
 import { descriptives, descriptivesBlock, descriptivesHtml, descriptivesLatex, descriptivesTable, missingReport } from '../export/tables.ts';
 import type { MeasureRequest, Results } from '../measures/measures.ts';
 import type { Slice } from '../network/networks.ts';
+import type { Protocol } from '../interview/protocol.ts';
 import { buildNetworks } from '../network/networks.ts';
 import { longForm, pairsForm } from '../reshape/forms.ts';
 import type { Notify } from './common.tsx';
 import { ColumnSelect, download, Panel, TablePreview } from './common.tsx';
 import { SaveButtons } from './DataView.tsx';
 
-export function ResultsView({ study, results, measures, slices, notify }: { study: Study; results: Results | null; measures: MeasureRequest[]; slices: Slice[]; notify: Notify }) {
+export function ResultsView({ study, results, measures, slices, notify, protocol }: { study: Study; results: Results | null; measures: MeasureRequest[]; slices: Slice[]; notify: Notify; protocol?: Protocol }) {
   const [group, setGroup] = useState<string | null>(null);
   const nets = useMemo(() => (results ? buildNetworks(study) : null), [study, results]);
   const forms = useMemo(() => (results && nets ? { long: longForm(study, nets), pairs: pairsForm(study, nets) } : null), [study, results, nets]);
@@ -45,7 +46,7 @@ export function ResultsView({ study, results, measures, slices, notify }: { stud
         <p>
           A ZIP file with the measures (CSV, Excel, Stata and SPSS), the codebook, the long and pairs files, a Word file with the descriptive table and a draft methods section, the same table for LaTeX, the missing-data report, a Stata do-file that merges the measures into your survey data and recomputes them as a check, an R script that recomputes them with igraph, and the recipe of every step.
         </p>
-        <button className="primary" onClick={() => download(`${base} EgoCraft results.zip`, bundleZip({ study, results, measures, slices, long: forms.long, pairs: forms.pairs }), 'application/zip')}>
+        <button className="primary" onClick={() => download(`${base} EgoCraft results.zip`, bundleZip({ study, results, measures, slices, long: forms.long, pairs: forms.pairs, ...(protocol ? { protocol } : {}) }), 'application/zip')}>
           Save the results (ZIP)
         </button>
       </Panel>
