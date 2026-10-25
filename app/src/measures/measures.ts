@@ -7,6 +7,8 @@ import type { Study } from '../core/study.ts';
 import type { EgoNetwork, Graph, Slice, StudyNetworks } from '../network/networks.ts';
 import { ALL, buildNetworks, describeSlice, graphFor } from '../network/networks.ts';
 import * as S from './structure.ts';
+import type { GeoLevel } from '../core/geo.ts';
+import { geoidText, km, LEVEL_DIGITS } from '../core/geo.ts';
 
 export type CompositionStat = 'mean' | 'sd' | 'median' | 'min' | 'max' | 'share' | 'shareAtLeast' | 'count';
 export type DiversityIndex = 'blau' | 'iqv' | 'entropy' | 'categories';
@@ -40,7 +42,13 @@ export type MeasureSpec =
   | { kind: 'layerOverlap'; a: string; b: string }
   /** Alter–alter layers: the tie types in the tie file. */
   | { kind: 'tieMultiplexity' }
-  | { kind: 'tieLayerOverlap'; a: string; b: string };
+  | { kind: 'tieLayerOverlap'; a: string; b: string }
+  /** Places (P10.3): kilometers from the ego to each alter, from latitude and longitude columns. */
+  | { kind: 'geoDistance'; egoLat: string; egoLon: string; alterLat: string; alterLon: string; stat: 'mean' | 'median' | 'max' }
+  /** Places: share of alters in the ego's own census area (from GEOID columns). */
+  | { kind: 'sameArea'; egoGeoid: string; alterGeoid: string; level: GeoLevel }
+  /** Places: how many different census areas the alters live in. */
+  | { kind: 'areasReached'; alterGeoid: string; level: GeoLevel };
 
 export type MeasureKind = MeasureSpec['kind'];
 
@@ -54,7 +62,7 @@ export interface MeasureRequest {
 interface Info {
   short: string;
   name: string;
-  group: 'Size and structure' | 'Brokerage' | 'Groups' | 'Composition' | 'Similarity' | 'Data quality' | 'Several kinds of tie';
+  group: 'Size and structure' | 'Brokerage' | 'Groups' | 'Composition' | 'Similarity' | 'Data quality' | 'Several kinds of tie' | 'Places';
   explain: string;
   citation?: string;
 }
@@ -86,6 +94,9 @@ export const MEASURE_INFO: Record<MeasureKind, Info> = {
   layerOverlap: { short: 'overlap', name: 'Overlap of two kinds of tie (ego–alter)', group: 'Several kinds of tie', explain: 'Alters tied to the ego both ways, divided by alters tied either way (Jaccard): do the people you discuss things with also help you?' },
   tieMultiplexity: { short: 'aamplex', name: 'Multiplexity (alter–alter)', group: 'Several kinds of tie', explain: 'Share of tied pairs of alters who are tied in more than one way (more than one tie type).', citation: 'Verbrugge (1979)' },
   tieLayerOverlap: { short: 'aaoverlap', name: 'Overlap of two tie types (alter–alter)', group: 'Several kinds of tie', explain: 'Pairs of alters tied both ways, divided by pairs tied either way (Jaccard).' },
+  geoDistance: { short: 'km', name: 'Distance to alters (km)', group: 'Places', explain: 'Straight-line kilometers between where the ego and each alter live (from latitude and longitude): the mean, median or largest.' },
+  sameArea: { short: 'samearea', name: 'Alters in the ego’s own area', group: 'Places', explain: 'Share of alters who live in the same census tract, county or state as the ego (from GEOID columns).' },
+  areasReached: { short: 'areas', name: 'Areas reached', group: 'Places', explain: 'How many different census tracts, counties or states the alters live in.' },
   yulesQ: { short: 'yq', name: 'Alter–alter homophily (Yule’s Q)', group: 'Similarity', explain: 'Whether alters in the same category are more likely to be tied to each other: +1 = only same-category ties, −1 = only cross-category ties.', citation: 'Yule (1900)' },
 };
 
@@ -125,6 +136,12 @@ export function defaultColumn(r: MeasureRequest): string {
       return safeName(`overlap_${s.a}_${s.b}${tail}`);
     case 'tieLayerOverlap':
       return safeName(`aaoverlap_${s.a}_${s.b}${tail}`);
+    case 'geoDistance':
+      return safeName(`km_${s.stat}${tail}`);
+    case 'sameArea':
+      return safeName(`same_${s.level}${tail}`);
+    case 'areasReached':
+      return safeName(`n_${s.level}s${tail}`);
     default:
       return safeName(`${MEASURE_INFO[s.kind].short}${tail}`);
   }
@@ -155,6 +172,15 @@ export function measureLabel(r: MeasureRequest, slice: Slice): string {
       break;
     case 'tieLayerOverlap':
       base = `Overlap of ${s.a} and ${s.b} ties among alters`;
+      break;
+    case 'geoDistance':
+      base = `${{ mean: 'Mean', median: 'Median', max: 'Largest' }[s.stat]} km from ego to alters`;
+      break;
+    case 'sameArea':
+      base = `Share of alters in the ego's ${s.level}`;
+      break;
+    case 'areasReached':
+      base = `Different ${s.level === 'county' ? 'counties' : `${s.level}s`} the alters live in`;
       break;
     default:
       base = MEASURE_INFO[s.kind].name;
@@ -344,6 +370,10 @@ function value(ctx: Context, net: EgoNetwork, g: Graph, spec: MeasureSpec): numb
       }
       return either ? both / either : null;
     }
+    case 'geoDistance':
+    case 'sameArea':
+    case 'areasReached':
+      return geoValue(study, net, g, spec);
     case 'tieMultiplexity':
     case 'tieLayerOverlap': {
       const kept = new Set(g.alterIds);
@@ -368,6 +398,35 @@ function value(ctx: Context, net: EgoNetwork, g: Graph, spec: MeasureSpec): numb
 }
 
 const PAIR_MEASURES: MeasureKind[] = ['ties', 'density', 'weightedDensity', 'meanDegree', 'maxDegree', 'egoBetweenness', 'egoBetweennessNorm', 'meanAlterBetweenness', 'maxAlterBetweenness', 'effectiveSize', 'efficiency', 'constraint', 'hierarchy', 'components', 'largestComponentShare', 'isolates', 'yulesQ', 'tieMultiplexity', 'tieLayerOverlap'];
+
+function geoValue(study: Study, net: EgoNetwork, g: Graph, spec: Extract<MeasureSpec, { kind: 'geoDistance' | 'sameArea' | 'areasReached' }>): number | null {
+  const E = study.egos;
+  const A = study.alters;
+  if (spec.kind === 'geoDistance') {
+    const js = [columnIndex(E, spec.egoLat), columnIndex(E, spec.egoLon), columnIndex(A, spec.alterLat), columnIndex(A, spec.alterLon)];
+    if (js.some((j) => j < 0)) return null;
+    const ey = numberOf(E.rows[net.row]![js[0]!]);
+    const ex = numberOf(E.rows[net.row]![js[1]!]);
+    if (ey === null || ex === null) return null;
+    const d = g.alterRows
+      .map((r) => {
+        const y = numberOf(A.rows[r]![js[2]!]);
+        const x = numberOf(A.rows[r]![js[3]!]);
+        return y === null || x === null ? null : km(ey, ex, y, x);
+      })
+      .filter((v): v is number => v !== null);
+    return stats(d, spec.stat);
+  }
+  const digits = LEVEL_DIGITS[spec.level];
+  const aj = columnIndex(A, spec.alterGeoid);
+  if (aj < 0) return null;
+  const areas = g.alterRows.map((r) => geoidText(A.rows[r]![aj])).filter((v): v is string => v !== null && v.length >= digits).map((v) => v.slice(0, digits));
+  if (spec.kind === 'areasReached') return g.n ? new Set(areas).size : null;
+  const ej = columnIndex(E, spec.egoGeoid);
+  const own = ej < 0 ? null : geoidText(E.rows[net.row]![ej]);
+  if (!own || own.length < digits || !areas.length) return null;
+  return areas.filter((a) => a === own.slice(0, digits)).length / areas.length;
+}
 
 /** Whether the missing-data cutoff (P9.2) leaves this measure empty for this ego. */
 function tooMuchUnknown(study: Study, g: Graph, spec: MeasureSpec): boolean {

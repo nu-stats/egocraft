@@ -18,8 +18,10 @@ import { SaveButtons } from './DataView.tsx';
 import { missingSummary, sensitivityTable } from '../measures/missing.ts';
 import type { WaveMatch } from './WavesPanel.tsx';
 import { WavesPanel } from './WavesPanel.tsx';
+import { LinksPanel } from './LinksPanel.tsx';
+import type { Study as StudyT } from '../core/study.ts';
 
-export function ResultsView({ study, results, measures, slices, notify, protocol, waveMatch, onWaveMatch }: { study: Study; results: Results | null; measures: MeasureRequest[]; slices: Slice[]; notify: Notify; protocol?: Protocol; waveMatch: WaveMatch; onWaveMatch: (w: WaveMatch) => void }) {
+export function ResultsView({ study, results, measures, slices, notify, protocol, waveMatch, onWaveMatch, onStudy }: { study: Study; results: Results | null; measures: MeasureRequest[]; slices: Slice[]; notify: Notify; protocol?: Protocol; waveMatch: WaveMatch; onWaveMatch: (w: WaveMatch) => void; onStudy: (s: StudyT) => void }) {
   const [group, setGroup] = useState<string | null>(null);
   const nets = useMemo(() => (results ? buildNetworks(study) : null), [study, results]);
   const forms = useMemo(() => (results && nets ? { long: longForm(study, nets), pairs: pairsForm(study, nets) } : null), [study, results, nets]);
@@ -57,6 +59,7 @@ export function ResultsView({ study, results, measures, slices, notify, protocol
         {results.notes.map((n) => <p key={n} className="muted">{n}</p>)}
         <TablePreview table={results.table} limit={30} showLabels />
       </Panel>
+      {nets ? <LinksPanel study={study} nets={nets} results={results} measures={measures} long={forms.long} onStudy={onStudy} notify={notify} /> : null}
       {nets && nets.waves.length > 1 ? <WavesPanel study={study} nets={nets} results={results} value={waveMatch} onChange={onWaveMatch} /> : null}
       <Panel
         title="Table for your paper"

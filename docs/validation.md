@@ -41,11 +41,17 @@ The do-file EgoCraft writes (`egocraft_check.do`) was run in Stata 19 SE on
 the sample study's results bundle. It recomputes size, mean and standard
 deviation of alter age, share of alters who are women and number of kin
 alters in plain Stata (`collapse`), and `assert`s that every value matches.
-It printed "EgoCraft check passed: Stata gives the same numbers."
+It printed "EgoCraft check passed" (the message now reads "the numbers match").
 
 The first run found a bug in the do-file itself: egos who named nobody are
 not in the long file, so their recomputed counts were missing rather than 0.
 The do-file now fills them with 0, as it already did for size.
+
+## 3b. StatCraft, 2026-10-24
+
+The same do-file ran unchanged in StatCraft (the clean-room Stata-compatible
+app, `statcraft run egocraft_check.do`): it read the `.dta` files with their
+labels, ran the merge, `collapse` and every `assert`, and passed.
 
 ## 4. R with igraph, 2026-10-24
 

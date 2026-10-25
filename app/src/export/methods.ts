@@ -57,6 +57,9 @@ function phrase(spec: MeasureSpec): string {
     case 'multiplexity': return spec.stat === 'mean' ? `multiplexity, the mean number of kinds of tie per alter (${spec.columns.join(', ')})` : `the share of alters tied to the ego in more than one way (${spec.columns.join(', ')})`;
     case 'layerOverlap': return `the overlap of ${spec.a} and ${spec.b} ties to the ego (alters with both over alters with either)`;
     case 'tieMultiplexity': return 'the share of tied alter pairs tied in more than one way';
+    case 'geoDistance': return `the ${spec.stat === 'max' ? 'largest' : spec.stat} straight-line distance in kilometers from the ego to the alters`;
+    case 'sameArea': return `the share of alters living in the ego's own census ${spec.level}`;
+    case 'areasReached': return `the number of different census ${spec.level === 'county' ? 'counties' : `${spec.level}s`} the alters live in`;
     case 'tieLayerOverlap': return `the overlap of ${spec.a} and ${spec.b} ties among alters (pairs with both over pairs with either)`;
   }
 }

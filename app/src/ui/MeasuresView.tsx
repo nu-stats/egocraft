@@ -9,6 +9,8 @@ import type { CompositionStat, DiversityIndex, MeasureKind, MeasureRequest, Meas
 import { computeMeasures, defaultColumn, MEASURE_INFO, safeName } from '../measures/measures.ts';
 import type { Condition, ConditionOp, Slice } from '../network/networks.ts';
 import { ALL, buildNetworks, describeSlice } from '../network/networks.ts';
+import { findPlaces } from '../links/links.ts';
+import type { GeoLevel } from '../links/links.ts';
 import type { Notify } from './common.tsx';
 import { ColumnSelect, Panel, TablePreview } from './common.tsx';
 
@@ -158,6 +160,70 @@ function LayerMeasure({ study, tieTypes, slices, onAdd }: { study: Study; tieTyp
   );
 }
 
+/** Place measures (P10.3): distance from latitude/longitude, same area and areas reached from GEOIDs. */
+function PlaceMeasure({ study, slices, onAdd }: { study: Study; slices: Slice[]; onAdd: (r: MeasureRequest) => void }) {
+  const p = findPlaces(study);
+  const [kind, setKind] = useState<'geoDistance' | 'sameArea' | 'areasReached'>(p.egoLat && p.alterLat ? 'geoDistance' : 'sameArea');
+  const [stat, setStat] = useState<'mean' | 'median' | 'max'>('mean');
+  const [level, setLevel] = useState<GeoLevel>('tract');
+  const [sliceId, setSliceId] = useState('all');
+  const egoCols = study.egos.columns.map((c) => c.name);
+  const alterCols = study.alters.columns.map((c) => c.name);
+  const [cols, setCols] = useState({ egoLat: p.egoLat, egoLon: p.egoLon, alterLat: p.alterLat, alterLon: p.alterLon, egoGeoid: p.egoGeoid, alterGeoid: p.alterGeoid });
+  const set = (k: keyof typeof cols) => (v: string | null) => setCols((c) => ({ ...c, [k]: v }));
+  let spec: MeasureSpec | null = null;
+  if (kind === 'geoDistance' && cols.egoLat && cols.egoLon && cols.alterLat && cols.alterLon) spec = { kind, egoLat: cols.egoLat, egoLon: cols.egoLon, alterLat: cols.alterLat, alterLon: cols.alterLon, stat };
+  if (kind === 'sameArea' && cols.egoGeoid && cols.alterGeoid) spec = { kind, egoGeoid: cols.egoGeoid, alterGeoid: cols.alterGeoid, level };
+  if (kind === 'areasReached' && cols.alterGeoid) spec = { kind, alterGeoid: cols.alterGeoid, level };
+  return (
+    <div className="map">
+      <label>Measure</label>
+      <select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
+        <option value="geoDistance">Distance from ego to alters (km, from latitude and longitude)</option>
+        <option value="sameArea">Share of alters in the ego’s own census area (from GEOIDs)</option>
+        <option value="areasReached">Areas the alters live in (from GEOIDs)</option>
+      </select>
+      {kind === 'geoDistance' ? (
+        <>
+          <label>Ego latitude, longitude</label>
+          <div className="row"><ColumnSelect value={cols.egoLat} columns={egoCols} onChange={set('egoLat')} none="(choose)" /><ColumnSelect value={cols.egoLon} columns={egoCols} onChange={set('egoLon')} none="(choose)" /></div>
+          <label>Alter latitude, longitude</label>
+          <div className="row"><ColumnSelect value={cols.alterLat} columns={alterCols} onChange={set('alterLat')} none="(choose)" /><ColumnSelect value={cols.alterLon} columns={alterCols} onChange={set('alterLon')} none="(choose)" /></div>
+          <label>Summary</label>
+          <select value={stat} onChange={(e) => setStat(e.target.value as typeof stat)}>
+            <option value="mean">Mean</option>
+            <option value="median">Median</option>
+            <option value="max">Largest</option>
+          </select>
+        </>
+      ) : (
+        <>
+          {kind === 'sameArea' ? (
+            <>
+              <label>Ego GEOID</label>
+              <ColumnSelect value={cols.egoGeoid} columns={egoCols} onChange={set('egoGeoid')} none="(choose)" />
+            </>
+          ) : null}
+          <label>Alter GEOID</label>
+          <ColumnSelect value={cols.alterGeoid} columns={alterCols} onChange={set('alterGeoid')} none="(choose)" />
+          <label>Census level</label>
+          <select value={level} onChange={(e) => setLevel(e.target.value as GeoLevel)}>
+            <option value="tract">Tract</option>
+            <option value="county">County</option>
+            <option value="state">State</option>
+          </select>
+        </>
+      )}
+      <label>Subgroup</label>
+      <select value={sliceId} onChange={(e) => setSliceId(e.target.value)}>
+        {[ALL, ...slices].map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+      </select>
+      <span />
+      <div><button className="primary" disabled={!spec} onClick={() => spec && onAdd({ spec, sliceId })}>Add this measure</button></div>
+    </div>
+  );
+}
+
 function VariableMeasure({ study, slices, onAdd }: { study: Study; slices: Slice[]; onAdd: (r: MeasureRequest) => void }) {
   const [kind, setKind] = useState<'composition' | 'diversity' | 'similarity' | 'yulesQ'>('composition');
   const [variable, setVariable] = useState<string | null>(null);
@@ -281,7 +347,7 @@ export function MeasuresView({ study, onStudy, slices, onSlices, measures, onMea
     onMeasures(has(kind, sliceId) ? measures.filter((m) => !(m.sliceId === sliceId && same(m.spec, spec))) : [...measures, { spec, sliceId }]);
     onResults(null);
   };
-  const variableMeasures = measures.filter((m) => ['composition', 'diversity', 'similarity', 'yulesQ', 'multiplexity', 'layerOverlap', 'tieLayerOverlap'].includes(m.spec.kind));
+  const variableMeasures = measures.filter((m) => ['composition', 'diversity', 'similarity', 'yulesQ', 'multiplexity', 'layerOverlap', 'tieLayerOverlap', 'geoDistance', 'sameArea', 'areasReached'].includes(m.spec.kind));
   const noTies = !study.ties;
   const compute = () => {
     try {
@@ -340,6 +406,8 @@ export function MeasuresView({ study, onStudy, slices, onSlices, measures, onMea
         <VariableMeasure study={study} slices={slices} onAdd={(r) => { onMeasures([...measures, r]); onResults(null); }} />
         <h3 style={{ marginTop: 16 }}>Several kinds of tie</h3>
         <LayerMeasure study={study} tieTypes={nets.tieTypes} slices={slices} onAdd={(r) => { onMeasures([...measures, r]); onResults(null); }} />
+        <h3 style={{ marginTop: 16 }}>Places</h3>
+        <PlaceMeasure study={study} slices={slices} onAdd={(r) => { onMeasures([...measures, r]); onResults(null); }} />
       </Panel>
       <Panel title="Alter pairs with no answer">
         <p className="muted">Some surveys ask about only some pairs of alters (for example the first ten alters), or people skip the question.</p>

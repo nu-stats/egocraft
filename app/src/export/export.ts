@@ -184,7 +184,7 @@ export function stataDoFile({ study, results, measures, long }: DoFileInput, now
   lines.push('replace chk_size = 0 if missing(chk_size)');
   for (const v of zeroFill) lines.push(`replace ${v} = 0 if missing(${v})`);
   lines.push(...asserts);
-  lines.push('display as result "EgoCraft check passed: Stata gives the same numbers."');
+  lines.push('display as result "EgoCraft check passed: the numbers match."');
   return lines.join('\n') + '\n';
 }
 
