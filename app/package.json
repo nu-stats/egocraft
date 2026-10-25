@@ -1,7 +1,7 @@
 {
   "name": "egocraft",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "EgoCraft: egocentric (personal) network analysis. Import ego, alter and alter-tie files, check and merge them, draw each person's network, compute the measures you choose, and export one row per ego with the code that produced it. Runs locally; your data never leaves your computer.",
   "type": "module",
   "license": "MIT OR Apache-2.0",

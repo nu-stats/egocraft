@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: >-
+  If you use EgoCraft in research or teaching, please cite it as below, and
+  cite the methods behind the measures you report (the codebook and the
+  draft methods section in the results ZIP list them).
+title: "EgoCraft: personal network data, from interview to analysis"
+abstract: >-
+  EgoCraft collects and analyzes egocentric (personal) network data. It runs
+  interviews on a laptop or an iPad, offline, with the answers kept encrypted
+  on the device; imports ego, alter and tie files in common layouts; checks
+  and merges them; draws each person's network; computes the measures the
+  researcher chooses, including change across waves, multiplex ties and
+  geography; fits regression models with alters nested in egos; and exports
+  one row per ego with a codebook, a draft methods section and the Stata and
+  R code that recomputes every number.
+type: software
+authors:
+  - family-names: Stowell
+    given-names: J.
+    email: j.stowell@northeastern.edu
+    affiliation: Northeastern University
+repository-code: "https://github.com/nu-stats/egocraft"
+license:
+  - MIT
+  - Apache-2.0
+version: 0.3.0
+date-released: "2026-10-24"
+keywords:
+  - personal networks
+  - egocentric networks
+  - social network analysis
+  - name generators
+  - survey research
+  - reproducibility
