@@ -68,6 +68,27 @@ gives the same numbers."
 | Density | 4.9 × 10⁻¹¹ |
 | Constraint (weighted) | 4.9 × 10⁻¹¹ |
 
+## 5. Models, Stata 19, 2026-10-24
+
+The regression engine (Results ▸ Models) was checked against Stata 19 on the
+sample study (2,129 alters in 194 egos). Every coefficient and standard error
+agreed to the six decimals Stata prints:
+
+| Model | Stata command | Example |
+|---|---|---|
+| Linear, clustered by ego | `regress … , vce(cluster ego_id)` | age .1488059 (se .0169327) |
+| Linear, categories | `regress … i.relation, vce(cluster ego_id)` | Friend −23.48389 (se 1.081998) |
+| Logistic, clustered by ego | `logit … , vce(cluster ego_id)` | _cons .4086449 (se .3963738) |
+| Weighted, robust | `regress … [pweight = w], vce(robust)` | same to six decimals |
+
+The do-file the Models panel writes ran unchanged: its `regress` line
+reproduced EgoCraft's table (degree on age, network size and relation: R² .2471,
+net_size .2161096, se .0279851), and its `mixed … || ego_id:` line fit the
+multilevel model. The R code (`lmer … , REML = FALSE`, lme4 2.0.1) gave the
+same fixed effects and variances as `mixed` (net_size .2572683; var(ego)
+.33495, residual 1.70098). The first category (lowest code) is the reference, as in
+Stata.
+
 ## Rerunning the checks
 
 ```bash

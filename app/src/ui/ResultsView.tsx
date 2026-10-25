@@ -19,6 +19,7 @@ import { missingSummary, sensitivityTable } from '../measures/missing.ts';
 import type { WaveMatch } from './WavesPanel.tsx';
 import { WavesPanel } from './WavesPanel.tsx';
 import { LinksPanel } from './LinksPanel.tsx';
+import { ModelsPanel } from './ModelsPanel.tsx';
 import type { Study as StudyT } from '../core/study.ts';
 
 export function ResultsView({ study, results, measures, slices, notify, protocol, waveMatch, onWaveMatch, onStudy }: { study: Study; results: Results | null; measures: MeasureRequest[]; slices: Slice[]; notify: Notify; protocol?: Protocol; waveMatch: WaveMatch; onWaveMatch: (w: WaveMatch) => void; onStudy: (s: StudyT) => void }) {
@@ -60,6 +61,7 @@ export function ResultsView({ study, results, measures, slices, notify, protocol
         <TablePreview table={results.table} limit={30} showLabels />
       </Panel>
       {nets ? <LinksPanel study={study} nets={nets} results={results} measures={measures} long={forms.long} onStudy={onStudy} notify={notify} /> : null}
+      {nets ? <ModelsPanel study={study} nets={nets} results={results} notify={notify} /> : null}
       {nets && nets.waves.length > 1 ? <WavesPanel study={study} nets={nets} results={results} value={waveMatch} onChange={onWaveMatch} /> : null}
       <Panel
         title="Table for your paper"
