@@ -66,8 +66,8 @@ are kept in the browser and in the `.egocraft` files you save, and nothing is
 sent anywhere.
 
 > **Status (version 0.3.0): Phases 0–11 work, and it runs offline on an
-> iPad.** What is left is the release (Phase 12): signed installers and a
-> web address for iPads. See [ROADMAP.md](ROADMAP.md) and
+> iPad at https://nu-stats.github.io/egocraft-app/.** What is left of the
+> release (Phase 12) is signed installers. See [ROADMAP.md](ROADMAP.md) and
 > [plan/STATUS.md](plan/STATUS.md) for the detailed state. How the numbers were checked is in
 > [docs/validation.md](docs/validation.md).
 
@@ -133,16 +133,26 @@ it can be added to the Home Screen, where it opens full screen like an app.
 Screens work by touch: large buttons, drag alters with a finger, and
 **Choose a file** in place of dragging files in.
 
-1. Open EgoCraft's web address in Safari on the iPad.
+1. Open **https://nu-stats.github.io/egocraft-app/** in Safari on the iPad.
 2. Tap the Share button, then **Add to Home Screen**.
 3. Open it from the Home Screen. From then on it opens with or without a
    network, and saving files puts them in the Files app.
 
-The iPad needs EgoCraft at an **https** web address. The Pinokio address
-(`http://127.0.0.1:…`) works only on the computer running Pinokio, so for
-iPads the built app (`app/dist`, a folder of static files) has to be put on
-a web host first, for example GitHub Pages or a university web server. No
-study data goes to the host: it only hands out the app's files.
+That address is the public repository
+[nu-stats/egocraft-app](https://github.com/nu-stats/egocraft-app), which
+holds only the built app (no source code), served by GitHub Pages. No study
+data goes there: the site only hands out the app's files. The Pinokio address
+(`http://127.0.0.1:…`) works only on the computer running Pinokio.
+
+To publish a new version there (maintainers, with git and an authorized `gh`):
+
+```bash
+cd app
+npm run publish-web
+```
+
+Devices that already have EgoCraft get the new version the next time they
+open it with a network.
 
 ## Programmatic access
 

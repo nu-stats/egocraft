@@ -15,6 +15,7 @@
     "test": "node --test --test-reporter=spec \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit -p .",
     "examples": "node scripts/write-examples.ts",
+    "publish-web": "npm run build && node scripts/publish-web.mjs",
     "ci": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {

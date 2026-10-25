@@ -118,7 +118,7 @@ Updated 2026-10-25 (version 0.3.0). Task ids are those in `ROADMAP.md`.
   questions, two generators, boxes by tap and by drag, closeness, ties by tap
   and by drag, end; then the study passed the checks and the measures matched
   a hand count.
-- Not yet: tried on a real iPad (needs an https address, see README); piles
+- Not yet: tried on a real iPad (the web address is ready, see README); piles
   screen only tested in code; translations.
 
 ## iPad and offline — done
@@ -127,7 +127,9 @@ Updated 2026-10-25 (version 0.3.0). Task ids are those in `ROADMAP.md`.
   no network (tested by stopping the server and reloading); manifest and Home
   Screen icons; touch-sized controls; storage kept where the browser allows,
   and a reminder to save the study as a file.
-- Needs an https web address for iPads: hosting not chosen yet.
+- Web address for iPads: https://nu-stats.github.io/egocraft-app/ (public
+  repo nu-stats/egocraft-app, built files only, GitHub Pages), published
+  2026-10-25 with `npm run publish-web`.
 
 ## Phase 7: Waves — done
 
@@ -185,5 +187,6 @@ Updated 2026-10-25 (version 0.3.0). Task ids are those in `ROADMAP.md`.
 - P12.3 Example study marked CC0 (`examples/README.md`); public data sets
   not included.
 - P12.4 `CITATION.cff` added; DOI waits for a public release.
-- Not done: signed installers (wait on the code-signing accounts) and a
-  public web address for iPads (needs a yes on where to host it).
+- P12.1 Web build: published at https://nu-stats.github.io/egocraft-app/
+  (2026-10-25). Not done: signed installers (wait on the code-signing
+  accounts).
