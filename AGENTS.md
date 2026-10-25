@@ -5,7 +5,7 @@ These rules bind every contributor, human or AI. Read this file, then
 
 ## 1. Clean-room rules
 
-EgoCraft rebuilds what personal-network software does, from published
+EgoCraft rebuilds what egocentric network software does, from published
 methods and public descriptions. How any existing program is built is never
 looked at.
 

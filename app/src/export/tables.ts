@@ -138,7 +138,7 @@ function apaRows(d: Descriptives): { header: string[]; rows: string[][]; note: s
   };
 }
 
-export function descriptivesBlock(d: Descriptives, number = 1, title = 'Descriptive Statistics for the Personal Network Measures'): Block {
+export function descriptivesBlock(d: Descriptives, number = 1, title = 'Descriptive Statistics for the Egocentric Network Measures'): Block {
   const a = apaRows(d);
   return { kind: 'table', number, title, header: a.header, rows: a.rows, note: a.note };
 }
@@ -146,7 +146,7 @@ export function descriptivesBlock(d: Descriptives, number = 1, title = 'Descript
 const tex = (s: string) => s.replace(/\\/g, '\\textbackslash{}').replace(/([&%$#_{}])/g, '\\$1').replace(/~/g, '\\textasciitilde{}').replace(/\^/g, '\\textasciicircum{}').replace(/−/g, '$-$').replace(/—/g, '---').replace(/≥/g, '$\\geq$').replace(/–/g, '--');
 
 /** A LaTeX table using booktabs rules (\toprule, \midrule, \bottomrule). */
-export function descriptivesLatex(d: Descriptives, title = 'Descriptive statistics for the personal network measures'): string {
+export function descriptivesLatex(d: Descriptives, title = 'Descriptive statistics for the egocentric network measures'): string {
   const a = apaRows(d);
   const align = 'l' + 'r'.repeat(a.header.length - 1);
   const L = [
@@ -167,7 +167,7 @@ export function descriptivesLatex(d: Descriptives, title = 'Descriptive statisti
   return L.join('\n') + '\n';
 }
 
-export function descriptivesHtml(d: Descriptives, title = 'Descriptive Statistics for the Personal Network Measures'): string {
+export function descriptivesHtml(d: Descriptives, title = 'Descriptive Statistics for the Egocentric Network Measures'): string {
   const a = apaRows(d);
   const e = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
   return `<table class="apa"><caption><strong>Table 1</strong><br><em>${e(title)}</em></caption><thead><tr>${a.header.map((h) => `<th>${e(h)}</th>`).join('')}</tr></thead><tbody>${a.rows.map((r) => `<tr>${r.map((c) => `<td>${e(c)}</td>`).join('')}</tr>`).join('')}</tbody></table><p><em>Note.</em> ${e(a.note.replace(/^Note\.\s*/, ''))}</p>`;

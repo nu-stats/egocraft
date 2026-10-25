@@ -61,7 +61,7 @@ function StudyView({ project, onProject, notify, go, kept }: { project: Project 
     <div className="page">
       <h1>EgoCraft</h1>
       <p>
-        Personal network analysis, start to finish: bring in your ego, alter and tie files, check the IDs, draw each person’s network, compute the measures you choose for any subgroup, and save one row per person to merge back into your survey data, with the Stata and R code that produced it.
+        Egocentric network analysis, start to finish: bring in your ego, alter and tie files, check the IDs, draw each person’s network, compute the measures you choose for any subgroup, and save one row per person to merge back into your survey data, with the Stata and R code that produced it.
       </p>
       <p className="muted">Everything stays on this device. EgoCraft has no account, sends nothing anywhere, keeps your open study in this browser between visits, and works without a network once it has been opened.</p>
       <div className="grid3">

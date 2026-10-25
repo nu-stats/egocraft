@@ -2,7 +2,7 @@ const path = require('path')
 module.exports = {
   version: "7.0",
   title: "EgoCraft",
-  description: "Personal (egocentric) network analysis: import ego, alter and tie files, check the IDs, draw each person's network, compute the measures you choose for any subgroup, and save one row per person with the Stata and R code that produced it. Runs on your computer; your data never leaves it.",
+  description: "Egocentric network analysis: import ego, alter and tie files, check the IDs, draw each person's network, compute the measures you choose for any subgroup, and save one row per person with the Stata and R code that produced it. Runs on your computer; your data never leaves it.",
   icon: "icon.png",
   menu: async (kernel, info) => {
     let installed = info.exists("app/dist/index.html")

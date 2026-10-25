@@ -1,4 +1,4 @@
-// An interview protocol (P6.1): the screens of a personal-network interview
+// An interview protocol (P6.1): the screens of an egocentric network interview
 // in order, with their wording and limits. Designed from the published
 // descriptions of name generators, name interpreters, closeness circles and
 // alter–alter tie questions (e.g. McCarty et al. 2019, Perry et al. 2018);
@@ -161,7 +161,7 @@ export function newScreen(kind: ScreenKind, p: Protocol): Screen {
 
 /** A ready-made protocol to start from: the important-matters name generator, a few interpreters, closeness and who-knows-whom. */
 export function sampleProtocol(now = new Date()): Protocol {
-  const p = emptyProtocol('Personal network interview (example)', now);
+  const p = emptyProtocol('Egocentric network interview (example)', now);
   const gender: Option[] = [{ value: '1', label: 'Woman' }, { value: '2', label: 'Man' }, { value: '3', label: 'Another gender' }];
   p.screens = [
     { kind: 'intro', id: 'intro1', title: 'Welcome', prompt: 'Thank you for taking part. These questions are about the people in your life. There are no right or wrong answers.' },

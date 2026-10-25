@@ -1,5 +1,5 @@
 {
   "title": "EgoCraft",
-  "description": "Personal (egocentric) network analysis: import ego, alter and tie files from CSV, Excel, Stata, SPSS or R, check the IDs, draw sociograms, compute size, density, brokerage, composition, diversity and homophily measures for any subgroup, and save one row per person with a Stata do-file and R script. Runs on your computer; your data stays there.",
+  "description": "Egocentric network analysis: import ego, alter and tie files from CSV, Excel, Stata, SPSS or R, check the IDs, draw sociograms, compute size, density, brokerage, composition, diversity and homophily measures for any subgroup, and save one row per person with a Stata do-file and R script. Runs on your computer; your data stays there.",
   "icon": "icon.png"
 }

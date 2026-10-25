@@ -1,7 +1,7 @@
 {
   "name": "EgoCraft",
   "short_name": "EgoCraft",
-  "description": "Personal network analysis: import, check, draw, measure and export, on your own device.",
+  "description": "Egocentric network analysis: import, check, draw, measure and export, on your own device.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

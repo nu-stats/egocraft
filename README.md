@@ -1,7 +1,7 @@
 # EgoCraft
 
-EgoCraft is a clean-room app for personal (egocentric) network research. A
-personal network is one person (the **ego**), the people they name (the
+EgoCraft is a clean-room app for egocentric network analysis. An
+egocentric network is one person (the **ego**), the people they name (the
 **alters**), and which of those people know each other (**alter–alter
 ties**). EgoCraft takes you from the interview, or the survey files, to the
 published table:

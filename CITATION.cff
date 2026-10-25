@@ -3,9 +3,9 @@ message: >-
   If you use EgoCraft in research or teaching, please cite it as below, and
   cite the methods behind the measures you report (the codebook and the
   draft methods section in the results ZIP list them).
-title: "EgoCraft: personal network data, from interview to analysis"
+title: "EgoCraft: egocentric network analysis, from interview to results"
 abstract: >-
-  EgoCraft collects and analyzes egocentric (personal) network data. It runs
+  EgoCraft collects and analyzes egocentric network data. It runs
   interviews on a laptop or an iPad, offline, with the answers kept encrypted
   on the device; imports ego, alter and tie files in common layouts; checks
   and merges them; draws each person's network; computes the measures the
@@ -26,7 +26,7 @@ license:
 version: 0.3.0
 date-released: "2026-10-24"
 keywords:
-  - personal networks
+  - egocentric network analysis
   - egocentric networks
   - social network analysis
   - name generators

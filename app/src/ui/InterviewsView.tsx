@@ -168,7 +168,7 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
   return (
     <div className="page">
       <h1>Interviews</h1>
-      <p className="muted">Collect personal-network data here, on a laptop or an iPad, with or without a network: design the questions, run interviews (you ask, or the respondent fills it in), and turn them into a study for the other steps.</p>
+      <p className="muted">Collect egocentric network data here, on a laptop or an iPad, with or without a network: design the questions, run interviews (you ask, or the respondent fills it in), and turn them into a study for the other steps.</p>
       <div className="tabs">
         {(['protocols', 'device', 'bring'] as Tab[]).map((t) => (
           <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
