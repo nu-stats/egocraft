@@ -117,7 +117,11 @@ function LayerMeasure({ study, tieTypes, slices, onAdd }: { study: Study; tieTyp
   const [a, setA] = useState<string | null>(null);
   const [b, setB] = useState<string | null>(null);
   const [sliceId, setSliceId] = useState('all');
-  const alterCols = study.alters.columns.filter((c) => c.kind === 'numeric' && ![study.mapping.alterEgoId, study.mapping.alterId, study.mapping.alterWave].includes(c.name)).map((c) => c.name);
+  // Only yes/no columns (every answer 0 or 1) can mark a kind of tie.
+  const alterCols = study.alters.columns
+    .map((c, j) => ({ c, j }))
+    .filter(({ c, j }) => c.kind === 'numeric' && ![study.mapping.alterEgoId, study.mapping.alterId, study.mapping.alterWave].includes(c.name) && study.alters.rows.every((r) => r[j] === null || r[j] === undefined || r[j] === 0 || r[j] === 1) && study.alters.rows.some((r) => r[j] === 1))
+    .map(({ c }) => c.name);
   const choices = kind === 'tieLayerOverlap' ? tieTypes : alterCols;
   const spec: MeasureSpec | null = kind === 'multiplexity' ? (cols.length >= 2 ? { kind, columns: cols, stat } : null) : a && b && a !== b ? { kind, a, b } : null;
   return (
@@ -131,9 +135,13 @@ function LayerMeasure({ study, tieTypes, slices, onAdd }: { study: Study; tieTyp
       {kind === 'multiplexity' ? (
         <>
           <label>Yes/no alter columns, one per kind of tie</label>
-          <select multiple value={cols} onChange={(e) => setCols([...e.target.selectedOptions].map((o) => o.value))}>
-            {alterCols.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          {alterCols.length >= 2 ? (
+            <select multiple value={cols} onChange={(e) => setCols([...e.target.selectedOptions].map((o) => o.value))}>
+              {alterCols.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          ) : (
+            <span className="muted small">The alter file needs two or more yes/no (0/1) columns, one for each kind of tie (for example friend, kin, coworker).</span>
+          )}
           <label>Summary</label>
           <select value={stat} onChange={(e) => setStat(e.target.value as typeof stat)}>
             <option value="mean">Mean kinds of tie per alter</option>

@@ -212,7 +212,7 @@ published descriptions of these methods, not from other programs' code.
   GeoJSON of egos, alters and ego–alter lines for HEV's My Files layer,
   and tract counts for HEV's Merge & Export.
 
-## Phase 11: Models (plan only)
+## Phase 11: Models
 
 - P11.1 Alters nested in egos: multilevel models of alter outcomes
   (is this alter a source of support?) with ego and alter predictors;

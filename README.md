@@ -41,17 +41,34 @@ published table:
    draft methods section with references, a report of how much each measure
    rests on missing answers, a Stata do-file that merges the results and
    recomputes them as a check, an R script that recomputes them with igraph,
-   and a recipe of every step.
+   and a recipe of every step. Also on the Results step:
+   - **Change between waves**: alters kept, lost and added for each ego,
+     their overlap, ties kept and lost, and the change in every measure,
+     with alters matched by ID, by name or code, or by agreeing answers
+     (checked by hand).
+   - **Models**: linear and logistic regression, for alters nested in egos
+     (standard errors clustered by ego) or one row per ego (robust standard
+     errors, weights), with Stata and R code for the full multilevel model
+     and a starting point for ergm.ego. Checked against Stata 19.
+   - **Use with your other apps**: files for StatCraft or Stata, alters and
+     egos as QualCraft cases (and QualCraft codes back as alter variables),
+     and a map file or counts by census area for Husky Eye View.
+
+   The measures also cover several kinds of tie (multiplexity, overlap,
+   any-or-all subgroups, a sociogram panel for each tie type), places
+   (distance from ego to alters, same tract, county or state, areas
+   reached) and missing data (the kinds of missing kept apart, a cutoff for
+   unknown pairs, and a table of how much the rule for unknown pairs
+   matters).
 
 Everything runs on your own computer. Files are read in the browser, studies
 are kept in the browser and in the `.egocraft` files you save, and nothing is
 sent anywhere.
 
-> **Status: Phases 0–4 and 6 work, Phase 5 (results) is nearly done, and it
-> runs offline on an iPad.** See [ROADMAP.md](ROADMAP.md) for what comes
-> next (built-in interviewing, waves, multilayer ties, missing data, links to
-> StatCraft, QualCraft and Husky Eye View) and [plan/STATUS.md](plan/STATUS.md)
-> for the detailed state. How the numbers were checked is in
+> **Status (version 0.3.0): Phases 0–11 work, and it runs offline on an
+> iPad.** What is left is the release (Phase 12): signed installers and a
+> web address for iPads. See [ROADMAP.md](ROADMAP.md) and
+> [plan/STATUS.md](plan/STATUS.md) for the detailed state. How the numbers were checked is in
 > [docs/validation.md](docs/validation.md).
 
 EgoCraft is part of the "Craft" family with StatCraft and QualCraft. It is an
@@ -169,6 +186,17 @@ writeFileSync('measures.csv', csvOf(results.table));
 
 `bundleZip` in `src/export/export.ts` writes the same ZIP as the Results
 step (measures, codebook, do-file, R script, recipe).
+
+Models work the same way (`src/models`):
+
+```ts
+import { alterModelData } from '../src/models/modelData.ts';
+import { fitModel, modelTable } from '../src/models/regress.ts';
+
+const alters = alterModelData(study, results); // one row per alter, with net_… ego measures
+const fit = fitModel(alters, { kind: 'linear', outcome: 'degree', predictors: ['age', 'net_size', 'relation'], categorical: ['relation'], weight: null, se: 'cluster', cluster: 'ego_id' });
+writeFileSync('model.csv', csvOf(modelTable(fit)));
+```
 
 ### Python
 

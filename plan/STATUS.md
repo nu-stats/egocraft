@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-24 (second round). Task ids are those in `ROADMAP.md`.
+Updated 2026-10-25 (version 0.3.0). Task ids are those in `ROADMAP.md`.
 
 ## Phase 0: Setup — done
 
@@ -25,8 +25,9 @@ Updated 2026-10-24 (second round). Task ids are those in `ROADMAP.md`.
   column names Network Canvas exports use, but no real Network Canvas export
   has been tried yet. Not yet: dedicated
   readers for EgoNet, EgoWeb 2.0, openeddi, E-Net layouts and GraphML.
-- P1.3 Column mapping with guesses from names and contents. Saved mappings
-  for reuse: not yet (the recipe stores them).
+- P1.3 Column mapping with guesses from names and contents. Saved choices
+  for reuse (Columns ▸ Save these choices / Use saved choices; a recipe file
+  works too).
 - P1.4 ID and link checks with fixes: done (missing IDs, duplicate egos,
   alters of missing egos, lost leading zeros, duplicate alters, egos with no
   alters, tie rows with missing or unknown IDs, self-ties, repeated pairs
@@ -74,10 +75,11 @@ Updated 2026-10-24 (second round). Task ids are those in `ROADMAP.md`.
 - P4.8 Drag alters into place (mouse or touch); hand placements kept per ego
   for every wave and saved in the study file, with an undo.
 
-## Phase 5: Results — mostly done
+## Phase 5: Results — done
 
 - P5.1 One row per ego (and wave): CSV, Excel, .dta, .sav. P5.2 Codebook.
-- P5.3 Recipe (JSON, not yet replayable from the interface), Stata do-file
+- P5.3 Recipe (JSON, rerun from Study ▸ Rerun a recipe, which lists any
+  step it could not apply), Stata do-file
   (merge + cross-check, passed in Stata 19), R script (igraph cross-check,
   passed in R 4.4.3 with igraph 2.3.4).
 - P5.4 Missing-pair rule, and a report per measure: egos with a value, why
@@ -87,7 +89,8 @@ Updated 2026-10-24 (second round). Task ids are those in `ROADMAP.md`.
   Word (.docx, checked in Word), LaTeX (booktabs), HTML, and as data.
 - P5.6 Draft methods section with an APA reference list (Results step and
   the ZIP).
-- Still open: replaying a recipe from the interface (P5.3).
+- Alter results (each alter's degree, betweenness, isolate, group size and
+  share of constraint): Data step and `egocraft_alter_measures.csv`.
 
 ## Phase 6: Data collection — done
 
@@ -126,6 +129,61 @@ Updated 2026-10-24 (second round). Task ids are those in `ROADMAP.md`.
   and a reminder to save the study as a file.
 - Needs an https web address for iPads: hosting not chosen yet.
 
-## Phases 7–12
+## Phase 7: Waves — done
 
-Not started.
+- P7.1–P7.2 Alters matched across waves by alter ID, by name or code, or by
+  agreeing answers (a suggestion); every ego's matches shown and editable.
+- P7.3 Per ego and pair of waves: alters kept, lost, added, Jaccard overlap,
+  ties kept, lost and new among kept alters, tie churn, change in every
+  measure (`egocraft_change.csv`).
+- P7.4 Measures wide by wave (`egocraft_measures_by_wave.csv`).
+- P7.5 Sociograms across waves in one layout (Phase 4).
+
+## Phase 8: Multilayer ties — done
+
+- P8.1–P8.3 Subgroups of several tie types with any/all; multiplexity
+  (mean kinds per alter, share tied more than one way) from yes/no alter
+  columns; overlap of two ego–alter kinds and of two alter–alter tie types.
+- P8.4 Sociograms with a separate panel for each tie type.
+
+## Phase 9: Missing data — done
+
+- P9.1 Kinds of missing kept apart (Results ▸ Missing information).
+- P9.2 Rule for unknown pairs (not tied / left out) and a cutoff on the
+  share of unknown pairs, recorded in the methods draft.
+- P9.3 Report per measure. P9.4 Sensitivity table: each measure under each
+  rule (`egocraft_sensitivity.csv`).
+
+## Phase 10: Links to the other apps — done
+
+- P10.1 StatCraft: `.dta` files and the check do-file in one ZIP; ran in
+  StatCraft and Stata 19.
+- P10.2 QualCraft: alters or egos as cases (`ego:alter`), QualCraft code
+  matrices back as alter variables.
+- P10.3 Husky Eye View: GeoJSON of egos, alters and ego–alter lines; counts
+  by tract, county or state. Distance, same-area and areas-reached
+  measures.
+
+## Phase 11: Models — done
+
+- P11.1 Alters nested in egos (each alter's answers and position, the ego's
+  answers and measures): linear or logistic, standard errors clustered by
+  ego; Stata (`mixed`, `melogit`) and R (`lmer`, `glmer`, ML) code for the
+  full multilevel model.
+- P11.2 One row per ego: robust or ordinary standard errors, weights.
+  Survey designs (strata, PSUs) are not handled in the app; the code can be
+  edited for `svy`.
+- P11.3 ergm.ego starting point (R, egor and ergm.ego).
+- Checked against Stata 19 to six decimals (regress, logit, clusters,
+  robust, pweights); the lme4 code matched `mixed`. See docs/validation.md.
+
+## Phase 12: Release — partly done
+
+- P12.2 Illustrated guide (24-page PDF) made 2026-10-25 with the headless
+  screenshot pipeline (kept with the media, not in the repository); the
+  2-minute highlight video was made earlier.
+- P12.3 Example study marked CC0 (`examples/README.md`); public data sets
+  not included.
+- P12.4 `CITATION.cff` added; DOI waits for a public release.
+- Not done: signed installers (wait on the code-signing accounts) and a
+  public web address for iPads (needs a yes on where to host it).
