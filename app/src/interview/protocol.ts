@@ -11,7 +11,22 @@ export interface Option {
   label: string;
 }
 
+import { conditionProblems } from './conditions.ts';
+
 export type QuestionType = 'text' | 'number' | 'choice' | 'yesno';
+
+export type ConditionOp = 'is' | 'isNot' | 'oneOf' | 'gt' | 'gte' | 'lt' | 'lte' | 'answered' | 'notAnswered';
+
+/** Skip logic (interview/conditions.ts): show a screen or question only when this holds. */
+export interface Condition {
+  /** The respondent's answer, the same person's answer, or how many people were named. */
+  source: 'ego' | 'alter' | 'named';
+  /** The variable; for "named", a name generator's ID or '' for everyone named. */
+  variable: string;
+  op: ConditionOp;
+  /** The value (is, is not, compare) or values (is one of), as text. */
+  values: string[];
+}
 
 export interface Question {
   /** The variable name in the data (letters, digits, underscore). */
@@ -23,6 +38,8 @@ export interface Question {
   required?: boolean;
   min?: number;
   max?: number;
+  /** Ask only when every condition holds (skip logic). */
+  showIf?: Condition[];
 }
 
 interface ScreenBase {
@@ -30,6 +47,8 @@ interface ScreenBase {
   title: string;
   /** What to ask or say. In interviewer mode it is shown as "Ask:". */
   prompt: string;
+  /** Show only when every condition holds (skip logic). */
+  showIf?: Condition[];
 }
 
 export type Screen =
@@ -122,6 +141,14 @@ export function protocolProblems(p: Protocol): string[] {
     if ((s.kind === 'tiesDraw' || s.kind === 'tiesPiles') && !s.tieType.trim()) out.push(`The screen "${s.title}" needs a tie type.`);
     if (s.kind === 'closeness' && (s.rings < 2 || s.rings > 6)) out.push('Closeness circles need 2 to 6 rings.');
   }
+  p.screens.forEach((s, i) => {
+    out.push(...conditionProblems(p, i, null, s.showIf, `Screen ${i + 1} (${s.title})`));
+    if (s.kind === 'egoForm' || s.kind === 'alterForm')
+      s.questions.forEach((q, k) => {
+        out.push(...conditionProblems(p, i, k, q.showIf, `"${q.id}"`));
+        if ((q.showIf?.length || s.showIf?.length) && q.id.length > 26) out.push(`"${q.id}" is asked only sometimes, so it gets a column ${q.id}_asked: keep its name to 26 characters.`);
+      });
+  });
   if (p.maxAlters < 1) out.push('Allow at least one person to be named.');
   return [...new Set(out)];
 }

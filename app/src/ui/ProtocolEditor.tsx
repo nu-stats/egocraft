@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { Option, Protocol, Question, QuestionType, Screen, ScreenKind } from '../interview/protocol.ts';
 import { newScreen, protocolProblems, SCREEN_INFO } from '../interview/protocol.ts';
 import { Panel } from './common.tsx';
+import { ConditionsEditor } from './ConditionsEditor.tsx';
 
 const KINDS = Object.keys(SCREEN_INFO) as ScreenKind[];
 
@@ -26,7 +27,7 @@ function OptionsEditor({ options, onChange }: { options: Option[]; onChange: (o:
   );
 }
 
-function QuestionsEditor({ questions, onChange }: { questions: Question[]; onChange: (q: Question[]) => void }) {
+function QuestionsEditor({ p, screenIndex, questions, onChange }: { p: Protocol; screenIndex: number; questions: Question[]; onChange: (q: Question[]) => void }) {
   const set = (i: number, patch: Partial<Question>) => onChange(questions.map((q, k) => (k === i ? { ...q, ...patch } : q)));
   return (
     <div style={{ display: 'grid', gap: 12 }}>
@@ -52,6 +53,8 @@ function QuestionsEditor({ questions, onChange }: { questions: Question[]; onCha
                 <OptionsEditor options={q.options ?? []} onChange={(options) => set(i, { options })} />
               </>
             ) : null}
+            <label>Skip logic</label>
+            <ConditionsEditor p={p} screenIndex={screenIndex} questionIndex={i} value={q.showIf} what="this question" onChange={(showIf) => set(i, { showIf })} />
           </div>
           <div className="row" style={{ marginTop: 8 }}>
             <button type="button" className="link" disabled={i === 0} onClick={() => onChange(questions.map((x, k) => (k === i - 1 ? questions[i]! : k === i ? questions[i - 1]! : x)))}>move up</button>
@@ -66,7 +69,7 @@ function QuestionsEditor({ questions, onChange }: { questions: Question[]; onCha
   );
 }
 
-function ScreenEditor({ s, onChange }: { s: Screen; onChange: (s: Screen) => void }) {
+function ScreenEditor({ p, index, s, onChange }: { p: Protocol; index: number; s: Screen; onChange: (s: Screen) => void }) {
   const set = (patch: Partial<Screen>) => onChange({ ...s, ...patch } as Screen);
   return (
     <div style={{ display: 'grid', gap: 10 }}>
@@ -75,6 +78,8 @@ function ScreenEditor({ s, onChange }: { s: Screen; onChange: (s: Screen) => voi
         <input id="sc-title" type="text" value={s.title} onChange={(e) => set({ title: e.target.value })} />
         <label htmlFor="sc-prompt">{s.kind === 'intro' || s.kind === 'end' || s.kind === 'consent' ? 'Text' : 'What to ask'}</label>
         <textarea id="sc-prompt" rows={3} value={s.prompt} onChange={(e) => set({ prompt: e.target.value })} style={{ width: '100%' }} />
+        <label>Skip logic</label>
+        <ConditionsEditor p={p} screenIndex={index} questionIndex={null} value={s.showIf} what="this screen" onChange={(showIf) => set({ showIf })} />
         <label>ID</label>
         <span className="small"><code>{s.id}</code>{s.kind === 'nameGenerator' ? ` (the alter file gets gen_${s.id} = 1 for everyone named here)` : ''}</span>
         {s.kind === 'consent' ? (
@@ -121,7 +126,7 @@ function ScreenEditor({ s, onChange }: { s: Screen; onChange: (s: Screen) => voi
       {s.kind === 'egoForm' || s.kind === 'alterForm' ? (
         <div>
           <h3>Questions</h3>
-          <QuestionsEditor questions={s.questions} onChange={(questions) => set({ questions })} />
+          <QuestionsEditor p={p} screenIndex={index} questions={s.questions} onChange={(questions) => set({ questions })} />
         </div>
       ) : null}
     </div>
@@ -176,7 +181,7 @@ export function ProtocolEditor({ protocol: p, onChange, onTry }: { protocol: Pro
         <button type="button" className="primary" disabled={!!problems.length} onClick={onTry}>Try it (nothing is saved)</button>
       </Panel>
       <Panel title={s ? `${sel + 1}. ${SCREEN_INFO[s.kind].name}` : 'No screens'}>
-        {s ? <ScreenEditor s={s} onChange={(next) => update(p.screens.map((x, k) => (k === sel ? next : x)))} /> : <p className="muted">Add a screen on the left.</p>}
+        {s ? <ScreenEditor p={p} index={sel} s={s} onChange={(next) => update(p.screens.map((x, k) => (k === sel ? next : x)))} /> : <p className="muted">Add a screen on the left.</p>}
       </Panel>
     </div>
   );

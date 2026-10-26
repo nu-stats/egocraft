@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Answer, Interview } from '../interview/interview.ts';
+import { visibleQuestions } from '../interview/conditions.ts';
 import { addAlter, blockReason, leaveScreen, pilesOf, removeAlter, setAlterAnswer, setEgoAnswer, setPiles, toggleTie } from '../interview/interview.ts';
 import type { Option, Protocol, Question, Screen } from '../interview/protocol.ts';
 
@@ -333,18 +334,21 @@ function ScreenBody({ s, iv, p, onChange, onStop }: { s: Screen; iv: Interview; 
         </div>
       );
     case 'egoForm':
-      return <div className="iv-stack">{s.questions.map((q) => <QuestionField key={q.id} id={`ego-${q.id}`} q={q} value={iv.ego[q.id]} onChange={(v) => onChange(setEgoAnswer(iv, q.id, v))} />)}</div>;
+      return <div className="iv-stack">{visibleQuestions(s, iv).map((q) => <QuestionField key={q.id} id={`ego-${q.id}`} q={q} value={iv.ego[q.id]} onChange={(v) => onChange(setEgoAnswer(iv, q.id, v))} />)}</div>;
     case 'nameGenerator':
       return <NameGenerator s={s} iv={iv} p={p} onChange={onChange} />;
     case 'alterForm':
       return (
         <div className="iv-stack">
-          {iv.alters.map((a) => (
-            <div key={a.id} className="iv-card">
-              <h3>{a.name}</h3>
-              {s.questions.map((q) => <QuestionField key={q.id} id={`${a.id}-${q.id}`} q={q} value={a.values[q.id]} onChange={(v) => onChange(setAlterAnswer(iv, a.id, q.id, v))} />)}
-            </div>
-          ))}
+          {iv.alters.map((a) => {
+            const qs = visibleQuestions(s, iv, a);
+            return qs.length ? (
+              <div key={a.id} className="iv-card">
+                <h3>{a.name}</h3>
+                {qs.map((q) => <QuestionField key={q.id} id={`${a.id}-${q.id}`} q={q} value={a.values[q.id]} onChange={(v) => onChange(setAlterAnswer(iv, a.id, q.id, v))} />)}
+              </div>
+            ) : null;
+          })}
         </div>
       );
     case 'alterBins':

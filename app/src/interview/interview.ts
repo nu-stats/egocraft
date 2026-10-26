@@ -3,6 +3,7 @@
 // whom. Every change returns a new interview, so the screens can save after
 // each answer and nothing is changed in place.
 
+import { shows, visibleQuestions } from './conditions.ts';
 import type { Protocol, Question, Screen } from './protocol.ts';
 
 export type Answer = string | number | null;
@@ -170,25 +171,36 @@ function missingRequired(questions: Question[], get: (q: Question) => Answer | u
 export function blockReason(iv: Interview, s: Screen): string | null {
   if (s.kind === 'consent' && s.required && iv.consent !== true) return iv.consent === false ? 'The interview stops here: consent was not given.' : 'Choose whether you agree before going on.';
   if (s.kind === 'egoForm') {
-    const miss = missingRequired(s.questions, (q) => iv.ego[q.id]);
+    const miss = missingRequired(visibleQuestions(s, iv), (q) => iv.ego[q.id]);
     if (miss.length) return `Please answer: ${miss.map((q) => q.label).join('; ')}`;
   }
   if (s.kind === 'alterForm') {
     for (const a of iv.alters) {
-      const miss = missingRequired(s.questions, (q) => a.values[q.id]);
+      const miss = missingRequired(visibleQuestions(s, iv, a), (q) => a.values[q.id]);
       if (miss.length) return `Please answer about ${a.name}: ${miss.map((q) => q.label).join('; ')}`;
     }
   }
   return null;
 }
 
-/** The next screen to show: screens about alters are skipped when nobody was named, tie screens when fewer than two. */
+/**
+ * Whether a screen is shown: its conditions hold, screens about people need
+ * someone named (tie screens two), and a form needs a question to show.
+ */
+export function screenShown(iv: Interview, s: Screen): boolean {
+  if (!shows(s.showIf, iv)) return false;
+  const needs = ['alterForm', 'alterBins', 'alterScale', 'closeness'].includes(s.kind) ? 1 : ['tiesDraw', 'tiesPiles'].includes(s.kind) ? 2 : 0;
+  if (iv.alters.length < needs) return false;
+  if (s.kind === 'egoForm' && s.questions.length) return visibleQuestions(s, iv).length > 0;
+  if (s.kind === 'alterForm' && s.questions.length) return iv.alters.some((a) => visibleQuestions(s, iv, a).length > 0);
+  return true;
+}
+
+/** The next screen to show, skipping screens not shown (screenShown). */
 export function nextScreen(iv: Interview, p: Protocol, from: number, step: 1 | -1): number {
   let i = from + step;
   while (i >= 0 && i < p.screens.length) {
-    const s = p.screens[i]!;
-    const needs = ['alterForm', 'alterBins', 'alterScale', 'closeness'].includes(s.kind) ? 1 : ['tiesDraw', 'tiesPiles'].includes(s.kind) ? 2 : 0;
-    if (iv.alters.length >= needs) return i;
+    if (screenShown(iv, p.screens[i]!)) return i;
     i += step;
   }
   return Math.max(0, Math.min(p.screens.length - 1, i));
