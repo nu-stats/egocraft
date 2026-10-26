@@ -7,16 +7,19 @@ import type { Study } from '../core/study.ts';
 import { withHistory } from '../core/study.ts';
 import { guessMapping } from '../import/guess.ts';
 import { detectWide, findTieColumns, tiesFromAlterColumns, wideToThree } from '../import/layouts.ts';
+import type { ThreeTables } from '../interop/formats.ts';
+import { OTHER_FORMATS } from '../interop/formats.ts';
 import { readDataFile } from '../io/read.ts';
 import type { Notify } from './common.tsx';
-import { ACCEPT, ColumnSelect, DropZone, fileBytes, Panel, TablePreview } from './common.tsx';
+import { ACCEPT, ColumnSelect, DropZone, fileBytes, Panel, pickFiles, TablePreview } from './common.tsx';
 
-type Layout = 'three' | 'two' | 'wide';
+type Layout = 'three' | 'two' | 'wide' | 'other';
 
 const LAYOUTS: { id: Layout; title: string; text: string }[] = [
   { id: 'three', title: 'Three files', text: 'An ego file (one row per person interviewed), an alter file (one row per person named, with the ego’s ID) and, if you have it, a tie file (one row per pair of alters who know each other).' },
   { id: 'two', title: 'Two files', text: 'An ego file and an alter file whose columns say which other alters each alter knows (knows_1, knows_2 …).' },
   { id: 'wide', title: 'One wide file', text: 'One row per person interviewed, with the alters’ answers spread across columns (alter1_age, alter2_age … or age_1, age_2 …) and ties in columns such as tie_1_2. This is how Qualtrics and REDCap usually export.' },
+  { id: 'other', title: 'From another program', text: 'The export files of another egocentric network program, or GraphML. EgoCraft turns them into the three files and you check the columns as usual.' },
 ];
 
 export function ImportView({ study, onStudy, notify, goNext }: { study: Study; onStudy: (s: Study) => void; notify: Notify; goNext: () => void }) {
@@ -25,6 +28,23 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
   const [busy, setBusy] = useState(false);
   const [egoIdWide, setEgoIdWide] = useState<string | null>(null);
   const [tieGroup, setTieGroup] = useState<string | null>(null);
+  const [format, setFormat] = useState(OTHER_FORMATS[0]!.id);
+  const [other, setOther] = useState<{ names: string[]; tables: ThreeTables } | null>(null);
+  const fmt = OTHER_FORMATS.find((f) => f.id === format)!;
+  const loadOther = async () => {
+    const chosen = await pickFiles(fmt.accept);
+    if (!chosen.length) return;
+    setBusy(true);
+    try {
+      const tables = await fmt.read(await Promise.all(chosen.map(async (f) => ({ name: f.name, bytes: await fileBytes(f) }))));
+      setOther({ names: chosen.map((f) => f.name), tables });
+    } catch (e) {
+      setOther(null);
+      notify((e as Error).message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const load = async (slot: string, f: File) => {
     setBusy(true);
@@ -43,14 +63,19 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
   const wideLayout = useMemo(() => (files.wide && egoIdWide ? detectWide(files.wide, egoIdWide) : null), [files.wide, egoIdWide]);
   const groups = useMemo(() => (files.alters ? findTieColumns(files.alters) : []), [files.alters]);
 
-  const ready = layout === 'wide' ? !!(files.wide && egoIdWide && wideLayout?.alterVariables.length) : !!(files.egos && files.alters);
+  const ready = layout === 'other' ? !!other : layout === 'wide' ? !!(files.wide && egoIdWide && wideLayout?.alterVariables.length) : !!(files.egos && files.alters);
 
   const use = () => {
     let egos: DataTable;
     let alters: DataTable;
     let ties: DataTable | null;
     const notes: string[] = [];
-    if (layout === 'wide') {
+    if (layout === 'other') {
+      egos = other!.tables.egos;
+      alters = other!.tables.alters;
+      ties = other!.tables.ties;
+      notes.push(`Imported ${other!.names.join(', ')} as ${fmt.title}.`, ...other!.tables.notes);
+    } else if (layout === 'wide') {
       const t = wideToThree(files.wide!, egoIdWide!, wideLayout!);
       egos = t.egos;
       alters = t.alters;
@@ -102,7 +127,22 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
         <p className="muted small">EgoCraft reads CSV, Excel (.xlsx and the older .xls), Stata (.dta), SPSS (.sav) and R (.rds, .RData). Files are read in this browser and never sent anywhere.</p>
       </Panel>
 
-      {layout === 'wide' ? (
+      {layout === 'other' ? (
+        <Panel title="Files from another program">
+          <div className="map compact">
+            <label htmlFor="other-format">Program or format</label>
+            <select id="other-format" value={format} onChange={(e) => { setFormat(e.target.value); setOther(null); }}>
+              {OTHER_FORMATS.map((f) => <option key={f.id} value={f.id}>{f.title}</option>)}
+            </select>
+          </div>
+          <p className="muted small" style={{ marginTop: 8 }}>{fmt.text}</p>
+          <div className="row">
+            <button onClick={loadOther}>{other ? 'Choose other files' : 'Choose the files'}</button>
+            <span className="muted small">{other ? other.names.join(', ') : 'Choose every file of the export at once, or the ZIP file it came in.'}</span>
+          </div>
+          {other ? other.tables.notes.map((n) => <p key={n} className="small" style={{ marginTop: 8 }}>{n}</p>) : null}
+        </Panel>
+      ) : layout === 'wide' ? (
         <Panel title="The wide file">
           <DropZone label="Survey file" hint="One row per person interviewed." file={files.wide?.name ?? null} accept={ACCEPT} onFile={(f) => load('wide', f)} />
           {files.wide ? (
@@ -148,7 +188,16 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
           )}
         </div>
       )}
-      {layout !== 'wide'
+      {layout === 'other' && other
+        ? (['egos', 'alters', 'ties'] as const).map((k) =>
+            other.tables[k] ? (
+              <Panel key={k} title={`${{ egos: 'Ego', alters: 'Alter', ties: 'Tie' }[k]} file`}>
+                <TablePreview table={other.tables[k]!} limit={5} />
+              </Panel>
+            ) : null,
+          )
+        : null}
+      {layout === 'three' || layout === 'two'
         ? (['egos', 'alters', 'ties'] as const).map((k) =>
             files[k] ? (
               <Panel key={k} title={`${{ egos: 'Ego', alters: 'Alter', ties: 'Tie' }[k]} file: ${files[k]!.name}`}>

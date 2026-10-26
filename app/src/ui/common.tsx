@@ -25,6 +25,19 @@ export async function fileBytes(file: File): Promise<Uint8Array> {
 }
 
 /** Ask for one file. Resolves null if the user cancels. */
+/** Several files at once (an export made of several files). */
+export function pickFiles(accept: string): Promise<File[]> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    input.multiple = true;
+    input.onchange = () => resolve(Array.from(input.files ?? []));
+    input.addEventListener('cancel', () => resolve([]));
+    input.click();
+  });
+}
+
 export function pickFile(accept: string): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
