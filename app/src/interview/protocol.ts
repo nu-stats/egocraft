@@ -137,8 +137,14 @@ export function protocolProblems(p: Protocol): string[] {
     names.set(key, q.id);
     if ((q.type === 'choice') && !q.options?.length) out.push(`"${q.id}" needs answer choices.`);
   }
+  const tieTypes = new Map<string, string>();
   for (const s of p.screens) {
     if ((s.kind === 'tiesDraw' || s.kind === 'tiesPiles') && !s.tieType.trim()) out.push(`The screen "${s.title}" needs a tie type.`);
+    if ((s.kind === 'tiesDraw' || s.kind === 'tiesPiles') && s.tieType.trim()) {
+      const other = tieTypes.get(s.tieType.trim().toLowerCase());
+      if (other) out.push(`The screens "${other}" and "${s.title}" both store the tie type "${s.tieType}": give each its own, or the second would replace the answers of the first.`);
+      tieTypes.set(s.tieType.trim().toLowerCase(), s.title);
+    }
     if (s.kind === 'closeness' && (s.rings < 2 || s.rings > 6)) out.push('Closeness circles need 2 to 6 rings.');
   }
   p.screens.forEach((s, i) => {
@@ -171,6 +177,11 @@ export function newScreen(kind: ScreenKind, p: Protocol): Screen {
   while (used.has(`${base}${n}`)) n++;
   const id = `${base}${n}`;
   const title = SCREEN_INFO[kind].name;
+  // Each who-knows-whom screen stores its own tie type (knows, knows2 …).
+  const usedTypes = new Set(p.screens.flatMap((s) => (s.kind === 'tiesDraw' || s.kind === 'tiesPiles' ? [s.tieType.toLowerCase()] : [])));
+  let t = 1;
+  while (usedTypes.has(t === 1 ? 'knows' : `knows${t}`)) t++;
+  const tieType = t === 1 ? 'knows' : `knows${t}`;
   switch (kind) {
     case 'intro': return { kind, id, title, prompt: 'Thank you for taking part. These questions are about the people in your life.' };
     case 'consent': return { kind, id, title, prompt: 'Your answers are kept private and used only for research. You can stop at any time.', required: true };
@@ -180,8 +191,8 @@ export function newScreen(kind: ScreenKind, p: Protocol): Screen {
     case 'alterBins': return { kind, id, title, prompt: 'How do you know each person?', variable: `bins${n}`, label: 'How the respondent knows the person', options: [{ value: '1', label: 'Family' }, { value: '2', label: 'Friend' }, { value: '3', label: 'Work or school' }, { value: '4', label: 'Other' }] };
     case 'alterScale': return { kind, id, title, prompt: 'How often are you in touch with each person?', variable: `scale${n}`, label: 'How often in touch', options: [{ value: '1', label: 'Less than monthly' }, { value: '2', label: 'Monthly' }, { value: '3', label: 'Weekly' }, { value: '4', label: 'Daily' }] };
     case 'closeness': return { kind, id, title, prompt: 'Place each person on the circles: the closer you feel to them, the nearer the middle.', variable: n === 1 ? 'closeness' : `closeness${n}`, label: 'Closeness (higher = closer)', rings: 4 };
-    case 'tiesDraw': return { kind, id, title, prompt: 'Which of these people know each other? Drag one person onto another, or tap two people.', tieType: 'knows' };
-    case 'tiesPiles': return { kind, id, title, prompt: 'Put people who know each other in the same pile.', tieType: 'knows' };
+    case 'tiesDraw': return { kind, id, title, prompt: 'Which of these people know each other? Drag one person onto another, or tap two people.', tieType };
+    case 'tiesPiles': return { kind, id, title, prompt: 'Put people who know each other in the same pile.', tieType };
     case 'end': return { kind, id, title, prompt: 'That is the end of the questions. Thank you!' };
   }
 }

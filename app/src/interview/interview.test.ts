@@ -124,3 +124,12 @@ test('the questionnaire as text lists every variable with its wording and codes'
   assert.match(t, /Variable gen_discuss = 1/);
   assert.match(t, /Tie type "knows"/);
 });
+
+test('each who-knows-whom screen keeps its own tie type, so piles never replace drawn ties', () => {
+  const piles = newScreen('tiesPiles', p);
+  assert.equal(piles.kind === 'tiesPiles' && piles.tieType, 'knows2');
+  const both = { ...p, screens: [...p.screens.slice(0, -1), piles, p.screens[p.screens.length - 1]!] };
+  assert.deepEqual(protocolProblems(both), []);
+  const clash = { ...both, screens: both.screens.map((s) => (s.kind === 'tiesPiles' ? { ...s, tieType: 'Knows' } : s)) };
+  assert.ok(protocolProblems(clash).some((x) => /both store the tie type "Knows"/.test(x)));
+});

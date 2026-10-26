@@ -74,7 +74,8 @@ function useDragDrop(onDrop: (id: string, target: string) => void, onTap?: (id: 
 
 function Person({ id, name, grab, picked, extra, drop }: { id: string; name: string; grab: (id: string, label: string) => (e: React.PointerEvent) => void; picked: string | null; extra?: ReactNode; drop?: string }) {
   return (
-    <span className={`iv-person${picked === id ? ' picked' : ''}`} onPointerDown={grab(id, name)} data-drop={drop} role="button" tabIndex={0} aria-pressed={picked === id}>
+    // The click that follows a tap must not reach the box or pile around the person, which would drop them straight back.
+    <span className={`iv-person${picked === id ? ' picked' : ''}`} onPointerDown={grab(id, name)} onClick={(e) => e.stopPropagation()} data-drop={drop} role="button" tabIndex={0} aria-pressed={picked === id}>
       {name}
       {extra}
     </span>
