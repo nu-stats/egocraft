@@ -2,6 +2,8 @@
 // only wording, so they are kept as they are; interviews are kept only in
 // encrypted form (interview/vault.ts), unlocked with the device passphrase.
 
+import type { BackupState } from '../interview/backup.ts';
+import { initialBackup, markBackedUp, markChanged, markDeleted } from '../interview/backup.ts';
 import type { Interview } from '../interview/interview.ts';
 import type { Protocol } from '../interview/protocol.ts';
 import { protocolFromJson } from '../interview/protocol.ts';
@@ -44,10 +46,46 @@ export async function listProtocols(): Promise<Protocol[]> {
 export const saveProtocol = (p: Protocol) => run('protocols', 'readwrite', (s) => s.put(p, p.id));
 export const deleteProtocol = (id: string) => run('protocols', 'readwrite', (s) => s.delete(id));
 
+/** Reads and changes the back-up record in the same transaction as the interview change, so the two never disagree. */
+async function withBackup(change: (interviews: IDBObjectStore, b: BackupState) => BackupState): Promise<void> {
+  const db = await open();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(['interviews', 'meta'], 'readwrite');
+    const meta = tx.objectStore('meta');
+    const interviews = tx.objectStore('interviews');
+    const got = meta.get('backup');
+    got.onsuccess = () => {
+      const have = got.result as BackupState | undefined;
+      if (have) meta.put(change(interviews, have), 'backup');
+      else {
+        const keys = interviews.getAllKeys();
+        keys.onsuccess = () => meta.put(change(interviews, initialBackup(keys.result.map(String))), 'backup');
+      }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error('Saving on this device failed.'));
+    tx.onabort = () => reject(tx.error ?? new Error('Saving on this device failed (the storage may be full).'));
+  });
+}
+
 export async function saveInterview(key: CryptoKey, iv: Interview): Promise<void> {
   const sealed = await seal(key, iv);
-  await run('interviews', 'readwrite', (s) => s.put(sealed, iv.id));
+  await withBackup((store, b) => {
+    store.put(sealed, iv.id);
+    return markChanged(b, iv.id);
+  });
 }
+
+/** The back-up record; on a device whose interviews predate it, every interview counts as not backed up. */
+export async function getBackup(): Promise<BackupState> {
+  const have = await run<BackupState | undefined>('meta', 'readonly', (s) => s.get('backup') as IDBRequest<BackupState | undefined>);
+  if (have) return have;
+  const keys = await run<IDBValidKey[]>('interviews', 'readonly', (s) => s.getAllKeys());
+  return initialBackup(keys.map(String));
+}
+
+/** After an encrypted file with these interviews was made. */
+export const setBackedUp = (ids: string[]) => withBackup((_, b) => markBackedUp(b, ids, new Date().toISOString()));
 
 export async function listInterviews(key: CryptoKey): Promise<Interview[]> {
   const db = await open();
@@ -69,4 +107,8 @@ export async function listInterviews(key: CryptoKey): Promise<Interview[]> {
   return list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export const deleteInterview = (id: string) => run('interviews', 'readwrite', (s) => s.delete(id));
+export const deleteInterview = (id: string) =>
+  withBackup((store, b) => {
+    store.delete(id);
+    return markDeleted(b, id);
+  });

@@ -2,6 +2,8 @@
 // device (kept encrypted), carry them by file, and make a study from them.
 
 import { useEffect, useRef, useState } from 'react';
+import type { BackupState } from '../interview/backup.ts';
+import { backupText } from '../interview/backup.ts';
 import type { Interview } from '../interview/interview.ts';
 import { startInterview } from '../interview/interview.ts';
 import type { Protocol } from '../interview/protocol.ts';
@@ -13,7 +15,7 @@ import { newProject } from '../project.ts';
 import type { Notify } from './common.tsx';
 import { download, fileBytes, Panel, pickFile } from './common.tsx';
 import { InterviewRunner } from './InterviewRunner.tsx';
-import { deleteInterview, deleteProtocol, getVaultMeta, listInterviews, listProtocols, saveInterview, saveProtocol, setVaultMeta } from './interviewStore.ts';
+import { deleteInterview, deleteProtocol, getBackup, getVaultMeta, listInterviews, listProtocols, saveInterview, saveProtocol, setBackedUp, setVaultMeta } from './interviewStore.ts';
 import { ProtocolEditor } from './ProtocolEditor.tsx';
 
 type Tab = 'protocols' | 'device' | 'bring';
@@ -63,12 +65,17 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
   const [form, setForm] = useState({ protocolId: '', egoId: '', wave: '', mode: 'interviewer' as Interview['mode'], interviewer: '' });
   const [keepNames, setKeepNames] = useState(false);
   const [brought, setBrought] = useState<{ protocol: Protocol; interviews: Interview[] } | null>(null);
+  const [backup, setBackup] = useState<BackupState | null>(null);
+  /** The questionnaire of an interview just finished, while asking to back it up. */
+  const [askBackup, setAskBackup] = useState<Protocol | null>(null);
   const saveTimer = useRef<number | undefined>(undefined);
   const protoTimer = useRef<number | undefined>(undefined);
 
   const refreshProtocols = () => listProtocols().then(setProtocols, () => setProtocols([]));
+  const refreshBackup = () => getBackup().then(setBackup, () => setBackup(null));
   useEffect(() => {
     refreshProtocols();
+    refreshBackup();
     getVaultMeta().then((m) => setHasVault(!!m), () => setHasVault(false));
   }, []);
   useEffect(() => {
@@ -107,6 +114,7 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
       try {
         await saveInterview(key, iv);
         setSaved(true);
+        refreshBackup();
         setInterviews((list) => [iv, ...list.filter((x) => x.id !== iv.id)]);
       } catch (e) {
         notify(`Could not save on this device: ${(e as Error).message}`, 'error');
@@ -142,7 +150,10 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
     try {
       const bytes = await interviewsToFile({ protocol: p, interviews: list, device: navigator.userAgent.slice(0, 80), savedAt: new Date().toISOString() }, pass);
       download(`${p.name} interviews ${new Date().toISOString().slice(0, 10)}.egocraft-interviews`.replace(/[\\/:*?"<>|]/g, ' '), bytes);
-      notify(`Saved ${list.length} interview${list.length === 1 ? '' : 's'}, encrypted.`, 'ok');
+      await setBackedUp(list.map((iv) => iv.id));
+      await refreshBackup();
+      setAskBackup(null);
+      notify(`Saved ${list.length} interview${list.length === 1 ? '' : 's'}, encrypted. Keep the file off this device (a computer, a drive or a cloud folder).`, 'ok');
     } catch (e) {
       notify((e as Error).message, 'error');
     }
@@ -161,7 +172,19 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
 
   if (running) {
     const p = protocolOf(running.protocolId);
-    if (p) return <InterviewRunner protocol={p} interview={running} onChange={change} onClose={() => setRunning(null)} saved={saved} />;
+    if (p)
+      return (
+        <InterviewRunner
+          protocol={p}
+          interview={running}
+          onChange={change}
+          onClose={() => {
+            if (running.finishedAt) setAskBackup(p);
+            setRunning(null);
+          }}
+          saved={saved}
+        />
+      );
   }
   if (trying && editing) return <InterviewRunner protocol={editing} interview={trying} onChange={setTrying} onClose={() => setTrying(null)} saved />;
 
@@ -169,6 +192,20 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
     <div className="page">
       <h1>Interviews</h1>
       <p className="muted">Collect egocentric network data here, on a laptop or an iPad, with or without a network: design the questions, run interviews (you ask, or the respondent fills it in), and turn them into a study for the other steps.</p>
+      {askBackup && key ? (
+        <Panel title="Back up the interview">
+          <p>The interview is finished and kept on this device. Back it up now: save the interviews as an encrypted file and keep it somewhere else (a computer, a drive or a cloud folder). If this device is lost, or the browser clears what it keeps, interviews that aren’t backed up are gone.</p>
+          <div className="row">
+            <button className="primary" onClick={() => exportFile(askBackup)}>Back up now</button>
+            <button onClick={() => setAskBackup(null)}>Later</button>
+          </div>
+        </Panel>
+      ) : backup && backup.pending.length ? (
+        <p className="chip warning" style={{ whiteSpace: 'normal', display: 'block', padding: '6px 10px', marginBottom: 12 }}>
+          {backupText(backup)} Save the interviews as an encrypted file and keep it off this device: if the device is lost, or the browser clears what it keeps, interviews that aren’t backed up are gone.{' '}
+          {key ? null : <>Unlock <strong>Interviews on this device</strong> to back them up.</>}
+        </p>
+      ) : null}
       <div className="tabs">
         {(['protocols', 'device', 'bring'] as Tab[]).map((t) => (
           <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
@@ -287,7 +324,7 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
                           <td>{new Date(iv.updatedAt).toLocaleString()}</td>
                           <td>
                             <button className="link" disabled={!protocolOf(iv.protocolId)} onClick={() => { setSaved(true); setRunning(iv); }}>{iv.finishedAt ? 'open' : 'continue'}</button>{' '}
-                            <button className="link" onClick={() => { if (window.confirm(`Delete the interview with respondent ${iv.egoId} from this device? This can't be undone. Save the interviews as a file first if you need them.`)) deleteInterview(iv.id).then(() => setInterviews((l) => l.filter((x) => x.id !== iv.id))); }}>delete</button>
+                            <button className="link" onClick={() => { if (window.confirm(`Delete the interview with respondent ${iv.egoId} from this device? This can't be undone. Save the interviews as a file first if you need them.`)) deleteInterview(iv.id).then(() => { setInterviews((l) => l.filter((x) => x.id !== iv.id)); refreshBackup(); }); }}>delete</button>
                           </td>
                         </tr>
                       ))}
@@ -297,10 +334,11 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
               ) : (
                 <p className="muted">No interviews yet.</p>
               )}
+              {backup ? <p className="muted small" style={{ marginTop: 10 }}>{backupText(backup)}</p> : null}
               {protocols.filter((p) => interviews.some((iv) => iv.protocolId === p.id)).map((p) => (
                 <div key={p.id} className="row" style={{ marginTop: 10 }}>
                   <strong>{p.name}:</strong>
-                  <button onClick={() => exportFile(p)}>Save its interviews as an encrypted file</button>
+                  <button className={backup && interviews.some((iv) => iv.protocolId === p.id && backup.pending.includes(iv.id)) ? 'primary' : ''} onClick={() => exportFile(p)}>Save its interviews as an encrypted file</button>
                   <button className="primary" onClick={() => makeStudy(p, interviews.filter((iv) => iv.protocolId === p.id))}>Make a study from them</button>
                 </div>
               ))}
