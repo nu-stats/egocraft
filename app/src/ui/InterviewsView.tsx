@@ -13,41 +13,12 @@ import { createVault, interviewsFromFile, interviewsToFile, openVault } from '..
 import type { Project } from '../project.ts';
 import { newProject } from '../project.ts';
 import type { Notify } from './common.tsx';
-import { download, fileBytes, Panel, pickFile } from './common.tsx';
+import { download, fileBytes, Panel, Passphrase, pickFile } from './common.tsx';
 import { InterviewRunner } from './InterviewRunner.tsx';
 import { deleteInterview, deleteProtocol, getBackup, getVaultMeta, listInterviews, listProtocols, saveInterview, saveProtocol, setBackedUp, setVaultMeta } from './interviewStore.ts';
 import { ProtocolEditor } from './ProtocolEditor.tsx';
 
 type Tab = 'protocols' | 'device' | 'bring';
-
-function Passphrase({ twice, label, onSubmit, busy }: { twice: boolean; label: string; onSubmit: (p: string) => void; busy: boolean }) {
-  const [a, setA] = useState('');
-  const [b, setB] = useState('');
-  const ok = a.length >= 8 && (!twice || a === b);
-  return (
-    <form
-      className="map"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (ok) onSubmit(a);
-      }}
-    >
-      <label htmlFor="pp1">Passphrase (8 characters or more)</label>
-      <input id="pp1" type="password" autoComplete={twice ? 'new-password' : 'current-password'} value={a} onChange={(e) => setA(e.target.value)} />
-      {twice ? (
-        <>
-          <label htmlFor="pp2">The passphrase again</label>
-          <input id="pp2" type="password" autoComplete="new-password" value={b} onChange={(e) => setB(e.target.value)} />
-        </>
-      ) : null}
-      <span />
-      <div>
-        <button type="submit" className="primary" disabled={!ok || busy}>{busy ? 'Working…' : label}</button>
-        {twice && b && a !== b ? <span className="small" style={{ color: 'var(--error)', marginLeft: 8 }}>The two are different.</span> : null}
-      </div>
-    </form>
-  );
-}
 
 const status = (iv: Interview) => (iv.finishedAt ? 'finished' : iv.consent === false ? 'no consent' : 'in progress');
 
@@ -68,6 +39,10 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
   const [backup, setBackup] = useState<BackupState | null>(null);
   /** The questionnaire of an interview just finished, while asking to back it up. */
   const [askBackup, setAskBackup] = useState<Protocol | null>(null);
+  /** An encrypted interview file being made: first its passphrase, then a tap to save it. */
+  const [exporting, setExporting] = useState<{ protocol: Protocol; file?: { name: string; bytes: Uint8Array; ids: string[] } } | null>(null);
+  /** An interview file chosen on Bring interviews in, waiting for its passphrase. */
+  const [incoming, setIncoming] = useState<{ name: string; bytes: Uint8Array } | null>(null);
   const saveTimer = useRef<number | undefined>(undefined);
   const protoTimer = useRef<number | undefined>(undefined);
 
@@ -143,19 +118,57 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
     change(iv);
   };
 
-  const exportFile = async (p: Protocol) => {
+  const exportFile = (p: Protocol) => {
+    setExporting({ protocol: p });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const makeFile = async (pass: string) => {
+    if (!exporting) return;
+    const p = exporting.protocol;
     const list = interviews.filter((iv) => iv.protocolId === p.id);
-    const pass = window.prompt('A passphrase for the file (8 characters or more). You will need it to open the file on the analysis computer.') ?? '';
-    if (!pass) return;
+    setBusy(true);
     try {
       const bytes = await interviewsToFile({ protocol: p, interviews: list, device: navigator.userAgent.slice(0, 80), savedAt: new Date().toISOString() }, pass);
-      download(`${p.name} interviews ${new Date().toISOString().slice(0, 10)}.egocraft-interviews`.replace(/[\\/:*?"<>|]/g, ' '), bytes);
-      await setBackedUp(list.map((iv) => iv.id));
-      await refreshBackup();
-      setAskBackup(null);
-      notify(`Saved ${list.length} interview${list.length === 1 ? '' : 's'}, encrypted. Keep the file off this device (a computer, a drive or a cloud folder).`, 'ok');
+      const name = `${p.name} interviews ${new Date().toISOString().slice(0, 10)}.egocraft-interviews`.replace(/[\\/:*?"<>|]/g, ' ');
+      setExporting({ protocol: p, file: { name, bytes, ids: list.map((iv) => iv.id) } });
     } catch (e) {
       notify((e as Error).message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveFile = async () => {
+    const f = exporting?.file;
+    if (!f) return;
+    download(f.name, f.bytes);
+    await setBackedUp(f.ids);
+    await refreshBackup();
+    setExporting(null);
+    setAskBackup(null);
+    notify(`Saved ${f.ids.length} interview${f.ids.length === 1 ? '' : 's'}, encrypted. Keep the file off this device (a computer, a drive or a cloud folder).`, 'ok');
+  };
+
+  const openIncoming = async (pass: string) => {
+    if (!incoming) return;
+    setBusy(true);
+    try {
+      const content = await interviewsFromFile(incoming.bytes, pass);
+      if (!content.protocol) throw new Error('This file has no questionnaire with it.');
+      setBrought((b) => {
+        if (b && b.protocol.id !== content.protocol!.id) {
+          notify('That file uses a different questionnaire; it replaces the files opened before.', 'error');
+          return { protocol: content.protocol!, interviews: content.interviews };
+        }
+        return { protocol: content.protocol!, interviews: [...(b?.interviews ?? []), ...content.interviews] };
+      });
+      notify(`Opened ${content.interviews.length} interviews from ${incoming.name}.`, 'ok');
+      setIncoming(null);
+    } catch (e) {
+      notify((e as Error).message, 'error');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -192,7 +205,25 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
     <div className="page">
       <h1>Interviews</h1>
       <p className="muted">Collect egocentric network data here, on a laptop or an iPad, with or without a network: design the questions, run interviews (you ask, or the respondent fills it in), and turn them into a study for the other steps.</p>
-      {askBackup && key ? (
+      {exporting && key ? (
+        <Panel title={`Back up: ${exporting.protocol.name}`}>
+          {exporting.file ? (
+            <>
+              <p>The encrypted file is ready ({exporting.file.ids.length} interview{exporting.file.ids.length === 1 ? '' : 's'}). Save it, then keep it somewhere other than this device.</p>
+              <div className="row">
+                <button className="primary" onClick={saveFile}>Save the file</button>
+                <button onClick={() => setExporting(null)}>Cancel</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="muted">A passphrase for the file. You will need it to open the file on the analysis computer; it can differ from this device’s passphrase.</p>
+              <Passphrase id="exp" twice label="Make the encrypted file" onSubmit={makeFile} busy={busy} />
+              <div className="row" style={{ marginTop: 8 }}><button onClick={() => setExporting(null)}>Cancel</button></div>
+            </>
+          )}
+        </Panel>
+      ) : askBackup && key ? (
         <Panel title="Back up the interview">
           <p>The interview is finished and kept on this device. Back it up now: save the interviews as an encrypted file and keep it somewhere else (a computer, a drive or a cloud folder). If this device is lost, or the browser clears what it keeps, interviews that aren’t backed up are gone.</p>
           <div className="row">
@@ -357,26 +388,17 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
             className="primary"
             onClick={async () => {
               const f = await pickFile('.egocraft-interviews');
-              if (!f) return;
-              const pass = window.prompt('Passphrase for this file') ?? '';
-              try {
-                const content = await interviewsFromFile(await fileBytes(f), pass);
-                if (!content.protocol) throw new Error('This file has no questionnaire with it.');
-                setBrought((b) => {
-                  if (b && b.protocol.id !== content.protocol!.id) {
-                    notify('That file uses a different questionnaire; it replaces the files opened before.', 'error');
-                    return { protocol: content.protocol!, interviews: content.interviews };
-                  }
-                  return { protocol: content.protocol!, interviews: [...(b?.interviews ?? []), ...content.interviews] };
-                });
-                notify(`Opened ${content.interviews.length} interviews from ${f.name}.`, 'ok');
-              } catch (e) {
-                notify((e as Error).message, 'error');
-              }
+              if (f) setIncoming({ name: f.name, bytes: await fileBytes(f) });
             }}
           >
             Open an interview file
           </button>
+          {incoming ? (
+            <div style={{ marginTop: 10 }}>
+              <p className="small">The passphrase of <strong>{incoming.name}</strong>:</p>
+              <Passphrase id="inc" twice={false} label="Open" onSubmit={openIncoming} busy={busy} />
+            </div>
+          ) : null}
           {brought ? (
             <div style={{ marginTop: 12 }}>
               <p>

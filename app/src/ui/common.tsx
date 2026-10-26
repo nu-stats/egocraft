@@ -159,3 +159,33 @@ export function DropZone({ label, hint, file, onFile, accept }: { label: string;
 }
 
 export const ACCEPT = '.csv,.tsv,.txt,.xlsx,.xls,.dta,.sav,.zsav,.rds,.rdata,.rda';
+
+/** A passphrase typed in the page (hidden as it is typed), never in a browser prompt that shows it. */
+export function Passphrase({ twice, label, onSubmit, busy, id = 'pp' }: { twice: boolean; label: string; onSubmit: (p: string) => void; busy: boolean; id?: string }) {
+  const [a, setA] = useState('');
+  const [b, setB] = useState('');
+  const ok = a.length >= 8 && (!twice || a === b);
+  return (
+    <form
+      className="map"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (ok) onSubmit(a);
+      }}
+    >
+      <label htmlFor={`${id}1`}>Passphrase (8 characters or more)</label>
+      <input id={`${id}1`} type="password" autoComplete={twice ? 'new-password' : 'current-password'} value={a} onChange={(e) => setA(e.target.value)} />
+      {twice ? (
+        <>
+          <label htmlFor={`${id}2`}>The passphrase again</label>
+          <input id={`${id}2`} type="password" autoComplete="new-password" value={b} onChange={(e) => setB(e.target.value)} />
+        </>
+      ) : null}
+      <span />
+      <div>
+        <button type="submit" className="primary" disabled={!ok || busy}>{busy ? 'Working…' : label}</button>
+        {twice && b && a !== b ? <span className="small" style={{ color: 'var(--error)', marginLeft: 8 }}>The two are different.</span> : null}
+      </div>
+    </form>
+  );
+}

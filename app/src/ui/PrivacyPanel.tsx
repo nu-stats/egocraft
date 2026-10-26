@@ -7,7 +7,7 @@ import type { Study } from '../core/study.ts';
 import type { TableName } from '../import/pseudonyms.ts';
 import { decryptKey, dropColumn, encryptKey, identifyingColumns, pseudonymize } from '../import/pseudonyms.ts';
 import type { Notify } from './common.tsx';
-import { download, fileBytes, Panel, pickFile, TablePreview } from './common.tsx';
+import { download, fileBytes, Panel, Passphrase, pickFile, TablePreview } from './common.tsx';
 
 const FILE: Record<TableName, string> = { egos: 'ego file', alters: 'alter file', ties: 'tie file' };
 
@@ -19,6 +19,7 @@ export function PrivacyPanel({ study, onStudy, notify }: { study: Study; onStudy
   const [pass2, setPass2] = useState('');
   const [busy, setBusy] = useState(false);
   const [opened, setOpened] = useState<DataTable | null>(null);
+  const [keyFile, setKeyFile] = useState<{ name: string; bytes: Uint8Array } | null>(null);
   const textCols = (['egos', 'alters'] as TableName[]).flatMap((t) => (t === 'egos' ? study.egos : study.alters).columns.filter((c) => c.kind === 'string').map((c) => ({ table: t, column: c.name })));
   const [table, column] = choice.split(':') as [TableName, string];
 
@@ -97,17 +98,31 @@ export function PrivacyPanel({ study, onStudy, notify }: { study: Study; onStudy
         <button
           onClick={async () => {
             const f = await pickFile('.egocraft-key');
-            if (!f) return;
-            try {
-              setOpened(await decryptKey(await fileBytes(f), window.prompt('Passphrase for this key file') ?? ''));
-            } catch (e) {
-              notify((e as Error).message, 'error');
-            }
+            if (f) setKeyFile({ name: f.name, bytes: await fileBytes(f) });
           }}
         >
           Open a saved key
         </button>
       </div>
+      {keyFile ? (
+        <div style={{ marginTop: 10 }}>
+          <p className="small">The passphrase of <strong>{keyFile.name}</strong>:</p>
+          <Passphrase
+            id="key"
+            twice={false}
+            label="Open"
+            busy={busy}
+            onSubmit={async (p) => {
+              try {
+                setOpened(await decryptKey(keyFile.bytes, p));
+                setKeyFile(null);
+              } catch (e) {
+                notify((e as Error).message, 'error');
+              }
+            }}
+          />
+        </div>
+      ) : null}
       {opened ? (
         <div style={{ marginTop: 10 }}>
           <div className="row" style={{ justifyContent: 'space-between' }}>

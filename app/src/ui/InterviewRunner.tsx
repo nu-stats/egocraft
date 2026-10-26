@@ -196,7 +196,7 @@ function Closeness({ s, iv, onChange }: { s: Extract<Screen, { kind: 'closeness'
   // Ring r's outer edge (rings = the closest, smallest ring); the middle 8% is the respondent.
   const radius = (r: number) => 8 + ((rings - r + 1) * 40) / rings;
   return (
-    <div className="iv-stack">
+    <div className="iv-stack iv-place">
       <div className={`iv-tray${dd.picked ? ' armed' : ''}`} data-drop="__none" onClick={() => dd.tapTarget('__none')}>
         <span className="muted small">Not placed yet</span>
         <div className="iv-people">{iv.alters.filter((a) => ringOf(a) === null).map((a) => <Person key={a.id} id={a.id} name={a.name} grab={dd.grab} picked={dd.picked} />)}</div>
