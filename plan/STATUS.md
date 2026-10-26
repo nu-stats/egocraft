@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-25 (version 0.3.0). Task ids are those in `ROADMAP.md`.
+Updated 2026-10-25 (version 0.3.0, fieldwork round). Task ids are those in `ROADMAP.md`.
 
 ## Phase 0: Setup — done
 
@@ -15,16 +15,22 @@ Updated 2026-10-25 (version 0.3.0). Task ids are those in `ROADMAP.md`.
 - P0.5 Pinokio launcher, local server on 127.0.0.1, README.
 - P0.6 CI on Windows, macOS and Linux (`.github/workflows/ci.yml`).
 
-## Phase 1: Import and checks — mostly done
+## Phase 1: Import and checks — done
 
-- P1.1 Readers: CSV/TSV, Excel .xlsx, Stata .dta, SPSS .sav/.zsav, R
-  .rds/.RData, with labels and value labels. Not yet: .xls (asks the user
-  to save as .xlsx).
+- P1.1 Readers: CSV/TSV, Excel .xlsx and .xls (Excel 97–2003, from the
+  published [MS-CFB]/[MS-XLS] descriptions; tested on a file saved by Excel
+  16), Stata .dta, SPSS .sav/.zsav, R .rds/.RData, with labels and value
+  labels.
 - P1.2 Layouts: three files, two files (knows_1 … columns), one wide file
-  (alter1_x / x_1 and tie_i_j columns). The column guesses know the ID
-  column names Network Canvas exports use, but no real Network Canvas export
-  has been tried yet. Not yet: dedicated
-  readers for EgoNet, EgoWeb 2.0, openeddi, E-Net layouts and GraphML.
+  (alter1_x / x_1 and tie_i_j or knows1-2 columns), and From another
+  program: GraphML (one graph per ego; an ego node taken out), Network
+  Canvas CSV export and GraphML (nc: graph attributes), EgoWeb 2.0
+  ego-alter and alter-pair files, EgoNet (the layout egor documents; EgoNet's
+  own export is undocumented), E-Net's row-wise file (its column-wise layout
+  is the wide file). Written from documentation only; tested on made-up files
+  in the documented layouts. Not yet tried on real exports from those
+  programs; openeddi not done. A "codes that mean missing" box works with
+  every format.
 - P1.3 Column mapping with guesses from names and contents. Saved choices
   for reuse (Columns ▸ Save these choices / Use saved choices; a recipe file
   works too).
@@ -97,7 +103,11 @@ Updated 2026-10-25 (version 0.3.0). Task ids are those in `ROADMAP.md`.
 - P6.1 Questionnaire designer (Interviews step): screens in order, wording,
   consent text, questions and answer choices, limits (most people in all, per
   name generator); checks before use; a ready-made example; try it without
-  saving; save and open as a file.
+  saving; save and open as a file. Skip logic: a screen or question shown
+  only when earlier answers meet conditions (the respondent's answers, the
+  same person's answers, or how many were named; is, is not, is one of,
+  number compares, answered); in the study each conditional variable gets
+  <name>_asked (1 asked, 0 skipped), so not asked stays apart from no answer.
 - P6.2 Name generators: a growing list typed in; one person named on several
   generators is kept once (gen_<id> = 1 for each); last wave's names offered.
 - P6.3 Name interpreters: questions about each person; sorting into boxes;
@@ -113,13 +123,22 @@ Updated 2026-10-25 (version 0.3.0). Task ids are those in `ROADMAP.md`.
   into the results ZIP as text and as a file.
 - P6.8 Interviews kept only encrypted on the device (AES-256-GCM, PBKDF2,
   passphrase never stored); carried by encrypted file; files from several
-  devices put together, each interview counted once.
+  devices put together, each interview counted once. Back-up reminder: the
+  number of interviews not yet saved to an encrypted file and the time of the
+  last back-up, shown before and after unlocking, and a prompt after each
+  finished interview. Passphrases are typed in the page (no browser
+  prompts); a back-up file is saved by a tap, as iOS needs.
 - Checked end to end in the browser at iPad size (768 × 1024): consent,
   questions, two generators, boxes by tap and by drag, closeness, ties by tap
   and by drag, end; then the study passed the checks and the measures matched
   a hand count.
-- Not yet: tried on a real iPad (the web address is ready, see README); piles
-  screen only tested in code; translations.
+- Piles screen checked by touch at 1024 × 768 (2026-10-25): tapping a
+  person now picks them (the tap used to reach the pile too), and each
+  who-knows-whom screen keeps its own tie type, so piles no longer replace
+  drawn ties. A WebKit (Safari engine) run at iPad size passed; closeness
+  circles now fit a landscape screen.
+- Not yet: tried on a real iPad (the web address is ready, see README);
+  translations.
 
 ## iPad and offline — done
 

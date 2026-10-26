@@ -9,12 +9,14 @@ published table:
 0. **Interviews** (optional): collect the data in EgoCraft itself, on a
    laptop or an iPad, with or without a network. Design the questionnaire
    (name generators, questions about each person, boxes and scales,
-   closeness circles, who knows whom), then run interviews by touch, asked by
-   an interviewer or filled in by the respondent. Interviews are kept
-   encrypted on the device, carried to the analysis computer in an encrypted
-   file, and turned into a study in one step.
-1. **Import** the ego, alter and tie files (CSV, Excel, Stata, SPSS or R), in
-   three files, two files, or one wide survey file.
+   closeness circles, who knows whom, and skip logic), then run interviews
+   by touch, asked by an interviewer or filled in by the respondent.
+   Interviews are kept encrypted on the device, with a reminder to back them
+   up, carried to the analysis computer in an encrypted file, and turned into
+   a study in one step.
+1. **Import** the ego, alter and tie files (CSV, Excel .xlsx or .xls, Stata,
+   SPSS or R), in three files, two files, or one wide survey file, or the
+   export files of Network Canvas, EgoWeb 2.0, EgoNet, E-Net or GraphML.
 2. **Columns**: EgoCraft guesses which column is the ego ID, the alter ID,
    the wave and so on; you check them.
 3. **Checks**: duplicate IDs, alters whose ego is missing, lost leading zeros,
@@ -109,7 +111,8 @@ development server instead.
 |---|---|
 | Three files | Egos: one row per person interviewed (and per wave). Alters: one row per person named, with the ego's ID and an alter ID unique within that ego. Ties (optional): one row per pair of alters, with the ego's ID and both alter IDs; optionally a tie type, a strength, and a "tied or not" column where 0 means not tied and an empty cell means not asked. |
 | Two files | The ego file, and an alter file with one column per other alter (`knows_1`, `knows_2` …). |
-| One wide file | One row per ego, alters spread across columns (`alter1_age`, `alter2_age` … or `age_1`, `age_2` …), ties in columns such as `tie_1_2`. |
+| One wide file | One row per ego, alters spread across columns (`alter1_age`, `alter2_age` … or `age_1`, `age_2` …), ties in columns such as `tie_1_2` or `knows1-2`. |
+| From another program | Network Canvas's CSV export (…_ego.csv, …_attributeList_<type>.csv, …_edgeList_<type>.csv) or GraphML; EgoWeb 2.0's ego-alter and alter-pair files; EgoNet's ego file with an alter and an edge file per ego; E-Net's row-wise file (*ego data, *alter data, *alter-alter data); any GraphML with one graph per ego. Choose all the files, or the ZIP. These readers follow each program's documentation and have been tested on made-up files only. |
 
 The sample study's three files are in [examples/](examples/).
 
