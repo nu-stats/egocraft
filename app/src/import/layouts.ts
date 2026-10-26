@@ -107,7 +107,8 @@ export interface WideLayout {
   maxAlters: number;
 }
 
-const TIE = /^(?:tie|ties|knows|know|kn|t|alter_?tie|aa|close)_?(\d+)_(\d+)$/i;
+// tie_1_2, knows_1_2, and E-Net's column-wise knows1-2.
+const TIE = /^(?:tie|ties|knows|know|kn|t|alter_?tie|aa|close)_?(\d+)[_-](\d+)$/i;
 const ALTER_FIRST = /^(?:alter|alt|a|nom|name|nam)_?(\d+)_?([A-Za-z].*)$/i;
 const VAR_FIRST = /^([A-Za-z][A-Za-z0-9]*?(?:_[A-Za-z][A-Za-z0-9]*)*)_?(\d+)$/;
 

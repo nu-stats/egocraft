@@ -25,6 +25,7 @@ interface Key {
 
 const EGO_ATTR = /^(ego_?id|egoid|respondent_?id|resp_?id|participant_?id|case_?id|subject_?id)$/i;
 const IS_EGO = /^(ego|is_?ego|isego|networkcanvasego)$/i;
+const NC_NAMES: Record<string, string> = { caseId: 'case_id', sessionUUID: 'session_id', protocolName: 'protocol_name' };
 const truthy = (v: string | undefined) => !!v && /^(true|1|yes|y|t)$/i.test(v.trim());
 const base = (name: string) => name.replace(/^.*[\\/]/, '').replace(/\.[^.]+$/, '');
 
@@ -73,10 +74,14 @@ export function graphmlToTables(files: { name: string; text: string }[]): ThreeT
     const graphs = kids(root, 'graph');
     if (!graphs.length) throw new Error(`${f.name} has no <graph>.`);
     graphs.forEach((g, gi) => {
-      const gdata = dataOf(g, 'graph');
+      // Network Canvas puts the case ID, session and protocol on the <graph> as nc: attributes.
+      const nc: Record<string, string> = {};
+      for (const a of Array.from(g.attributes)) if (a.name.startsWith('nc:')) nc[NC_NAMES[a.name.slice(3)] ?? `nc_${a.name.slice(3)}`] = a.value;
+      const gdata = { ...nc, ...dataOf(g, 'graph') };
       const idAttr = Object.keys(gdata).find((n) => EGO_ATTR.test(n));
       const graphId = attr(g, 'id');
-      const egoId = (idAttr && gdata[idAttr]?.trim()) || (graphs.length === 1 ? base(f.name) : graphId && !/^G\d*$/i.test(graphId) ? graphId : `${base(f.name)}_${gi + 1}`);
+      const ncId = nc.case_id ? (seenEgo.has(nc.case_id) && nc.session_id ? `${nc.case_id}_${nc.session_id}` : nc.case_id) : null;
+      const egoId = (idAttr && gdata[idAttr]?.trim()) || ncId || (graphs.length === 1 ? base(f.name) : graphId && !/^G\d*$/i.test(graphId) ? graphId : `${base(f.name)}_${gi + 1}`);
       if (seenEgo.has(egoId)) throw new Error(`Two networks have the ego ID "${egoId}". Give each graph its own ID (an ego_id attribute or a graph id).`);
       seenEgo.add(egoId);
       if ((attr(g, 'edgedefault') ?? 'undirected') === 'directed') directed++;

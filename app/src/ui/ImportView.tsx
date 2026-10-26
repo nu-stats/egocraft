@@ -8,7 +8,7 @@ import { withHistory } from '../core/study.ts';
 import { guessMapping } from '../import/guess.ts';
 import { detectWide, findTieColumns, tiesFromAlterColumns, wideToThree } from '../import/layouts.ts';
 import type { ThreeTables } from '../interop/formats.ts';
-import { OTHER_FORMATS } from '../interop/formats.ts';
+import { OTHER_FORMATS, readOther } from '../interop/formats.ts';
 import { readDataFile } from '../io/read.ts';
 import type { Notify } from './common.tsx';
 import { ACCEPT, ColumnSelect, DropZone, fileBytes, Panel, pickFiles, TablePreview } from './common.tsx';
@@ -29,15 +29,17 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
   const [egoIdWide, setEgoIdWide] = useState<string | null>(null);
   const [tieGroup, setTieGroup] = useState<string | null>(null);
   const [format, setFormat] = useState(OTHER_FORMATS[0]!.id);
-  const [other, setOther] = useState<{ names: string[]; tables: ThreeTables } | null>(null);
+  const [other, setOther] = useState<{ names: string[]; tables: ThreeTables; files: { name: string; bytes: Uint8Array }[] } | null>(null);
+  const [missingCodes, setMissingCodes] = useState('');
+  const codes = missingCodes.split(',').map((c) => c.trim()).filter(Boolean);
   const fmt = OTHER_FORMATS.find((f) => f.id === format)!;
   const loadOther = async () => {
     const chosen = await pickFiles(fmt.accept);
     if (!chosen.length) return;
     setBusy(true);
     try {
-      const tables = await fmt.read(await Promise.all(chosen.map(async (f) => ({ name: f.name, bytes: await fileBytes(f) }))));
-      setOther({ names: chosen.map((f) => f.name), tables });
+      const files = await Promise.all(chosen.map(async (f) => ({ name: f.name, bytes: await fileBytes(f) })));
+      setOther({ names: chosen.map((f) => f.name), tables: readOther(fmt, files, { missingCodes: codes }), files });
     } catch (e) {
       setOther(null);
       notify((e as Error).message, 'error');
@@ -136,6 +138,24 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
             </select>
           </div>
           <p className="muted small" style={{ marginTop: 8 }}>{fmt.text}</p>
+          <div className="map compact" style={{ marginBottom: 8 }}>
+            <label htmlFor="other-missing">Codes that mean missing</label>
+            <input
+              id="other-missing"
+              type="text"
+              value={missingCodes}
+              placeholder="for example -1, -7, 99 (optional)"
+              onChange={(e) => setMissingCodes(e.target.value)}
+              onBlur={() => {
+                if (!other) return;
+                try {
+                  setOther({ ...other, tables: readOther(fmt, other.files, { missingCodes: codes }) });
+                } catch (e) {
+                  notify((e as Error).message, 'error');
+                }
+              }}
+            />
+          </div>
           <div className="row">
             <button onClick={loadOther}>{other ? 'Choose other files' : 'Choose the files'}</button>
             <span className="muted small">{other ? other.names.join(', ') : 'Choose every file of the export at once, or the ZIP file it came in.'}</span>
