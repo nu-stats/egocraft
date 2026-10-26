@@ -89,6 +89,37 @@ same fixed effects and variances as `mixed` (net_size .2572683; var(ego)
 .33495, residual 1.70098). The first category (lowest code) is the reference, as in
 Stata.
 
+## 6. egor (R), 2026-10-25
+
+egor 1.25.10, the R package for egocentric network data, was installed from
+CRAN and run as a black box (its code was not read), on wave 1 of the sample
+study: 200 egos, 1,137 alters and 1,245 alter–alter ties (the pairs tied on
+any tie type). Both sides used unweighted ties, with pairs not asked counted
+as not tied. `scripts/egor-check.ts` writes the files and EgoCraft's results;
+`scripts/egor-check.R` reads them into egor (`threefiles_to_egor`) and
+compares every ego.
+
+| Measure | EgoCraft | egor | Egos compared | Largest difference |
+|---|---|---|---|---|
+| Size | size | number of alters | 200 | 0 |
+| Density | density | `ego_density` | 177 | 4.8 × 10⁻¹¹ |
+| Constraint | constraint | `ego_constraint` | 192 | 5.0 × 10⁻¹¹ |
+| Mean age | composition, mean | `comp_ply(…, mean)` | 191 | 4.4 × 10⁻¹¹ |
+| Share women | composition, share | `comp_ply` (share of code 2) | 192 | 4.6 × 10⁻¹¹ |
+| Race categories | diversity, categories | `alts_diversity_count` | 192 | 0 |
+| Race entropy | diversity, entropy | `alts_diversity_entropy` (base e) | 192 | 5.0 × 10⁻¹¹ |
+| E-I index, gender | similarity, E-I | `comp_ei` | 192 | 4.6 × 10⁻¹¹ |
+
+The differences come from EgoCraft rounding results to 10 decimal places.
+Two definitions differ, and neither is an error:
+
+- **Egos who named nobody (8 here).** egor gives them 0 categories and an
+  entropy of 0; EgoCraft leaves both empty, since with no alters there is
+  nothing to be diverse. To match egor, recode them to 0 where size = 0.
+- **Entropy's logarithm.** egor uses base 2 unless told otherwise; EgoCraft
+  uses the natural logarithm (base e), as above. Divide EgoCraft's value by
+  ln 2 (0.693) for egor's default.
+
 ## Rerunning the checks
 
 ```bash
@@ -98,3 +129,11 @@ node scripts/write-examples.ts --bundle ../check
 
 Then run `check/egocraft_check.do` in Stata, `check/egocraft_check.R` in R
 (needs igraph), or compare with networkx as above.
+
+For egor (install.packages("egor")):
+
+```bash
+cd app
+node scripts/egor-check.ts ../check-egor
+Rscript scripts/egor-check.R ../check-egor
+```
