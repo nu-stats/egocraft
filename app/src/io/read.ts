@@ -40,7 +40,8 @@ export async function readDataFile(name: string, bytes: Uint8Array): Promise<Dat
       return tableFromText(name, t.columns, t.rows.map((r) => r.map((c) => (c === null ? '' : String(c)))));
     }
     case '.xls': {
-      const t = readXls(bytes);
+      // Some programs save .xlsx (a ZIP) or a web page under the .xls name.
+      const t = bytes[0] === 0x50 && bytes[1] === 0x4b ? readXlsx(bytes) : readXls(bytes);
       return tableFromText(name, t.columns, t.rows.map((r) => r.map((c) => (c === null ? '' : String(c)))));
     }
     case '.dta':

@@ -28,6 +28,7 @@ test('Stata and SPSS files keep labels and value labels', async () => {
 });
 
 test('unreadable files get a plain message', async () => {
-  await assert.rejects(readDataFile('x.xls', new Uint8Array(4)), /older Excel file/);
+  await assert.rejects(readDataFile('x.xls', new Uint8Array(4)), /not an Excel 97–2003 workbook/);
+  await assert.rejects(readDataFile('x.xls', new TextEncoder().encode('<html><table><tr><td>1</td></tr></table></html>')), /really a web page/);
   await assert.rejects(readDataFile('x.pdf', new Uint8Array(4)), /can't read/);
 });

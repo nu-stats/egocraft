@@ -186,7 +186,11 @@ const num = (n: number) => (Number.isInteger(n) ? String(n) : String(Number(n.to
 
 export function readXls(bytes: Uint8Array): Table {
   const wb = cfbStream(bytes, ['Workbook', 'Book']);
-  if (!wb) throw new Error('This .xls file could not be opened: it is not an Excel 97–2003 workbook. Save it as .xlsx or CSV and try again.');
+  if (!wb) {
+    const start = new TextDecoder().decode(bytes.subarray(0, 512)).trimStart().toLowerCase();
+    if (start.startsWith('<')) throw new Error('This .xls file is really a web page or XML file, not an Excel workbook. Open it in Excel, save it as .xlsx or CSV, and try again.');
+    throw new Error('This .xls file could not be opened: it is not an Excel 97–2003 workbook. Save it as .xlsx or CSV and try again.');
+  }
   const head = records(wb);
   const bof = head[0];
   if (!bof || bof.type !== 0x0809 || (bof.data[0]! | (bof.data[1]! << 8)) !== 0x0600) throw new Error('This .xls file is from Excel 95 or older. Open it in Excel, save it as .xlsx or CSV, and try again.');
