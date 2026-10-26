@@ -5,8 +5,9 @@ import { tableFromText } from '../core/data.ts';
 import { readDta, readRData, readSav } from './statRead.js';
 import type { StatTable } from './statRead.js';
 import { parseCsv, readXlsx } from './table.ts';
+import { readXls } from './xls.ts';
 
-export const READABLE = ['.csv', '.tsv', '.txt', '.xlsx', '.dta', '.sav', '.zsav', '.rds', '.rdata', '.rda'];
+export const READABLE = ['.csv', '.tsv', '.txt', '.xlsx', '.xls', '.dta', '.sav', '.zsav', '.rds', '.rdata', '.rda'];
 
 export function extensionOf(name: string): string {
   const m = /\.[^.\\/]+$/.exec(name.toLowerCase());
@@ -38,8 +39,10 @@ export async function readDataFile(name: string, bytes: Uint8Array): Promise<Dat
       const t = readXlsx(bytes);
       return tableFromText(name, t.columns, t.rows.map((r) => r.map((c) => (c === null ? '' : String(c)))));
     }
-    case '.xls':
-      throw new Error(`"${name}" is an older Excel file (.xls). Open it in Excel and save it as .xlsx or CSV, then try again.`);
+    case '.xls': {
+      const t = readXls(bytes);
+      return tableFromText(name, t.columns, t.rows.map((r) => r.map((c) => (c === null ? '' : String(c)))));
+    }
     case '.dta':
       return fromStat(name, readDta(bytes));
     case '.sav':
@@ -50,6 +53,6 @@ export async function readDataFile(name: string, bytes: Uint8Array): Promise<Dat
     case '.rda':
       return fromStat(name, await readRData(bytes));
     default:
-      throw new Error(`EgoCraft can't read "${name}". It reads CSV, Excel (.xlsx), Stata (.dta), SPSS (.sav) and R (.rds, .RData) files.`);
+      throw new Error(`EgoCraft can't read "${name}". It reads CSV, Excel (.xlsx, .xls), Stata (.dta), SPSS (.sav) and R (.rds, .RData) files.`);
   }
 }

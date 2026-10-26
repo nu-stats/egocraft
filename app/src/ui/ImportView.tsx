@@ -99,7 +99,7 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
             </label>
           ))}
         </div>
-        <p className="muted small">EgoCraft reads CSV, Excel (.xlsx), Stata (.dta), SPSS (.sav) and R (.rds, .RData). Files are read in this browser and never sent anywhere.</p>
+        <p className="muted small">EgoCraft reads CSV, Excel (.xlsx and the older .xls), Stata (.dta), SPSS (.sav) and R (.rds, .RData). Files are read in this browser and never sent anywhere.</p>
       </Panel>
 
       {layout === 'wide' ? (

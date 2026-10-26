@@ -43,7 +43,7 @@ export function LinksPanel({ study, nets, results, measures, long, onStudy, noti
   };
 
   const bringCodes = async () => {
-    const f = await pickFile('.csv,.xlsx');
+    const f = await pickFile('.csv,.xlsx,.xls');
     if (!f) return;
     try {
       const t = await readDataFile(f.name, await fileBytes(f));

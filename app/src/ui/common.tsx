@@ -145,4 +145,4 @@ export function DropZone({ label, hint, file, onFile, accept }: { label: string;
   );
 }
 
-export const ACCEPT = '.csv,.tsv,.txt,.xlsx,.dta,.sav,.zsav,.rds,.rdata,.rda';
+export const ACCEPT = '.csv,.tsv,.txt,.xlsx,.xls,.dta,.sav,.zsav,.rds,.rdata,.rda';
