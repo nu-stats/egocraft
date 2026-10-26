@@ -84,6 +84,9 @@ export function ModelsPanel({ study, nets, results, notify }: { study: Study; ne
 
   const base = `${study.name.replace(/[\\/:*?"<>|]/g, ' ')} model`;
   const table = fit ? modelTable(fit) : null;
+  // On screen, p as in APA tables (<.001, .034); the CSV keeps the numbers.
+  const pCol = table ? table.columns.findIndex((c) => c.name === 'p') : -1;
+  const shown = table && pCol >= 0 ? { ...table, columns: table.columns.map((c, j) => (j === pCol ? { ...c, kind: 'string' as const } : c)), rows: table.rows.map((r) => r.map((v, j) => (j === pCol && typeof v === 'number' ? pText(v) : v))) } : table;
   const wordFile = (r: ModelResult) =>
     buildDocx(
       [
@@ -202,7 +205,7 @@ export function ModelsPanel({ study, nets, results, notify }: { study: Study; ne
             </div>
           </div>
           {fit.notes.map((n) => <p key={n} className="muted small">{n}</p>)}
-          <TablePreview table={table} limit={100} showLabels />
+          <TablePreview table={shown!} limit={100} showLabels />
         </div>
       ) : null}
       <p className="muted small" style={{ marginTop: 10 }}>
