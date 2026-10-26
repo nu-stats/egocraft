@@ -12,3 +12,5 @@ studies/
 .DS_Store
 Thumbs.db
 .claude/
+# WebKit test output
+app/scripts/out/
