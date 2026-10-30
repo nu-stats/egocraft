@@ -146,9 +146,12 @@ Updated 2026-10-29 (version 0.4.0). Task ids are those in `ROADMAP.md`.
   no network (tested by stopping the server and reloading); manifest and Home
   Screen icons; touch-sized controls; storage kept where the browser allows,
   and a reminder to save the study as a file.
-- Web address for iPads: https://nu-stats.github.io/egocraft-app/ (public
-  repo nu-stats/egocraft-app, built files only, GitHub Pages), published
-  2026-10-25 with `npm run publish-web`.
+- Web address for iPads: https://nu-stats.github.io/egocraft/, built and
+  published by GitHub Pages from this repository on every push to main
+  (since 2026-10-30). The first address, nu-stats.github.io/egocraft-app/
+  (a separate repo of built files, now archived), redirects here, and its
+  service worker clears the old offline copy; studies and interviews carry
+  over (the browser keeps them for the whole site).
 
 ## Phase 7: Waves — done
 
@@ -205,7 +208,8 @@ Updated 2026-10-29 (version 0.4.0). Task ids are those in `ROADMAP.md`.
   2-minute highlight video was made earlier.
 - P12.3 Example study marked CC0 (`examples/README.md`); public data sets
   not included.
-- P12.4 `CITATION.cff` added; DOI waits for a public release.
-- P12.1 Web build: published at https://nu-stats.github.io/egocraft-app/
-  (2026-10-25). Not done: signed installers (wait on the code-signing
-  accounts).
+- P12.4 `CITATION.cff`; version 0.4.0 released 2026-10-30 with DOI
+  10.5281/zenodo.23788152 (all versions; 0.4.0 is 10.5281/zenodo.23788153).
+- P12.1 Web build: https://nu-stats.github.io/egocraft/ (from this
+  repository since 2026-10-30). Not done: signed installers (wait on the
+  code-signing accounts).

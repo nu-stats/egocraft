@@ -14,16 +14,16 @@ import { mkdirSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
-// A folder argument is served at http://127.0.0.1:<port>/egocraft-app/ and the
+// A folder argument is served at http://127.0.0.1:<port>/egocraft/ and the
 // server is stopped for the offline part (a real loss of network, which
 // Playwright's setOffline doesn't give service workers in WebKit).
-const ARG = process.argv[2] || 'https://nu-stats.github.io/egocraft-app/';
+const ARG = process.argv[2] || 'https://nu-stats.github.io/egocraft/';
 let server = null;
 let URL = ARG;
 if (!/^https?:/.test(ARG)) {
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.wasm': 'application/wasm' };
   server = createServer((req, res) => {
-    let u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/egocraft-app/, '');
+    let u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/egocraft/, '');
     if (u === '' || u.endsWith('/')) u += 'index.html';
     const f = join(ARG, u);
     if (!existsSync(f)) { res.writeHead(404); return res.end(); }
@@ -31,7 +31,7 @@ if (!/^https?:/.test(ARG)) {
     res.end(readFileSync(f));
   });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  URL = `http://127.0.0.1:${server.address().port}/egocraft-app/`;
+  URL = `http://127.0.0.1:${server.address().port}/egocraft/`;
   console.log('serving', ARG, 'at', URL);
 }
 const OUT = new globalThis.URL('./out/', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');

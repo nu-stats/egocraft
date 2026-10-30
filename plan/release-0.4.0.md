@@ -2,7 +2,7 @@
 
 EgoCraft is an app for egocentric network analysis, from the interview to the published table. It runs in the browser on a laptop or an iPad, offline, and your data never leaves your device.
 
-**Try it:** https://nu-stats.github.io/egocraft-app/ (on an iPad: Share ▸ Add to Home Screen). In Pinokio, install this repository.
+**Try it:** https://nu-stats.github.io/egocraft/ (on an iPad: Share ▸ Add to Home Screen). In Pinokio, install this repository.
 
 ### What it does
 - **Collect interviews** on a laptop or iPad: name generators, questions about each person, boxes, closeness circles, who knows whom, and skip logic. Interviews are kept encrypted on the device, with a back-up reminder.
@@ -18,6 +18,8 @@ Worked by hand; networkx; Stata 19 (measures and models); R with igraph, egor an
 - The readers for other programs' exports follow their documentation and were tested on made-up files, not real exports (EgoNet's own export format is not publicly documented).
 - Not yet tried on a real iPad (it passes an iPad-size Safari-engine test).
 - Signed installers.
+
+**Cite:** [10.5281/zenodo.23788152](https://doi.org/10.5281/zenodo.23788152) (all versions; this version is [10.5281/zenodo.23788153](https://doi.org/10.5281/zenodo.23788153)).
 
 ### Files attached
 - `EgoCraft_Guide.pdf`: the 28-page user guide.

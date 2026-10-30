@@ -70,7 +70,7 @@ are kept in the browser and in the `.egocraft` files you save, and nothing is
 sent anywhere.
 
 > **Status (version 0.4.0): Phases 0–11 work, and it runs offline on an
-> iPad at https://nu-stats.github.io/egocraft-app/.** What is left of the
+> iPad at https://nu-stats.github.io/egocraft/.** What is left of the
 > release (Phase 12) is signed installers. See [ROADMAP.md](ROADMAP.md) and
 > [plan/STATUS.md](plan/STATUS.md) for the detailed state. How the numbers were checked is in
 > [docs/validation.md](docs/validation.md).
@@ -138,26 +138,22 @@ it can be added to the Home Screen, where it opens full screen like an app.
 Screens work by touch: large buttons, drag alters with a finger, and
 **Choose a file** in place of dragging files in.
 
-1. Open **https://nu-stats.github.io/egocraft-app/** in Safari on the iPad.
+1. Open **https://nu-stats.github.io/egocraft/** in Safari on the iPad.
 2. Tap the Share button, then **Add to Home Screen**.
 3. Open it from the Home Screen. From then on it opens with or without a
    network, and saving files puts them in the Files app.
 
-That address is the public repository
-[nu-stats/egocraft-app](https://github.com/nu-stats/egocraft-app), which
-holds only the built app (no source code), served by GitHub Pages. No study
-data goes there: the site only hands out the app's files. The Pinokio address
-(`http://127.0.0.1:…`) works only on the computer running Pinokio.
+GitHub Pages serves that address from this repository: every push to main
+is checked, built and published by `.github/workflows/pages.yml`. No study
+data goes there: the site only hands out the app's files. Devices that already
+have EgoCraft get the new version the next time they open it with a network.
+The Pinokio address (`http://127.0.0.1:…`) works only on the computer running
+Pinokio.
 
-To publish a new version there (maintainers, with git and an authorized `gh`):
-
-```bash
-cd app
-npm run publish-web
-```
-
-Devices that already have EgoCraft get the new version the next time they
-open it with a network.
+The old address, nu-stats.github.io/egocraft-app/, sends visitors here; studies
+and interviews kept in the browser carry over, because the browser keeps them
+for the whole site. On an iPad with the old Home Screen icon, remove it and add
+the new address.
 
 ## Programmatic access
 
