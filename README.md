@@ -1,5 +1,7 @@
 # EgoCraft
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23788152.svg)](https://doi.org/10.5281/zenodo.23788152)
+
 EgoCraft is a clean-room app for egocentric network analysis. An
 egocentric network is one person (the **ego**), the people they name (the
 **alters**), and which of those people know each other (**alter–alter
@@ -254,3 +256,10 @@ npm run examples  # rewrite examples/ from the sample study
 MIT OR Apache-2.0, at your option. The sample study is made up and CC0.
 Third-party files and the methods' sources are listed in
 [ATTRIBUTION.md](ATTRIBUTION.md).
+
+## Citing EgoCraft
+
+Cite the concept DOI, which always points to the latest version:
+[10.5281/zenodo.23788152](https://doi.org/10.5281/zenodo.23788152) (version
+0.4.0: [10.5281/zenodo.23788153](https://doi.org/10.5281/zenodo.23788153)).
+`CITATION.cff` has the details; GitHub's "Cite this repository" button reads it.
