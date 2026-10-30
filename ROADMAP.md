@@ -7,7 +7,7 @@ messages. The current state is in `plan/STATUS.md`.
 
 ## Phase 0: Setup
 
-- P0.1 Repository (private, `nu-stats/egocraft`), engine and interface as
+- P0.1 Repository (public since 2026-10-29, `nu-stats/egocraft`), engine and interface as
   separate packages, lints, formatting.
 - P0.2 Contributor rules (`AGENTS.md`, `CLAUDE.md`), licence, notices,
   clean-room rules written down.

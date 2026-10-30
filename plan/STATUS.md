@@ -4,7 +4,7 @@ Updated 2026-10-29 (version 0.4.0). Task ids are those in `ROADMAP.md`.
 
 ## Phase 0: Setup — done
 
-- P0.1 Repository `nu-stats/egocraft` (private), engine and interface in one
+- P0.1 Repository `nu-stats/egocraft` (public since 2026-10-29), engine and interface in one
   npm project (`app/`), kept apart by the layout rules in `AGENTS.md`.
 - P0.2 `AGENTS.md`, `CLAUDE.md`, licenses, `NOTICE`, `ATTRIBUTION.md`.
 - P0.3 `npm run ci`: type check, tests, build.
