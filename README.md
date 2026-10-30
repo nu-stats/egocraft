@@ -67,7 +67,7 @@ Everything runs on your own computer. Files are read in the browser, studies
 are kept in the browser and in the `.egocraft` files you save, and nothing is
 sent anywhere.
 
-> **Status (version 0.3.0): Phases 0–11 work, and it runs offline on an
+> **Status (version 0.4.0): Phases 0–11 work, and it runs offline on an
 > iPad at https://nu-stats.github.io/egocraft-app/.** What is left of the
 > release (Phase 12) is signed installers. See [ROADMAP.md](ROADMAP.md) and
 > [plan/STATUS.md](plan/STATUS.md) for the detailed state. How the numbers were checked is in

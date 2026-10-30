@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-25 (version 0.3.0, fieldwork round). Task ids are those in `ROADMAP.md`.
+Updated 2026-10-29 (version 0.4.0). Task ids are those in `ROADMAP.md`.
 
 ## Phase 0: Setup — done
 
