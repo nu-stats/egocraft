@@ -8,7 +8,11 @@
 
 export function serviceWorkerSource(files: string[], version: string): string {
   return `// EgoCraft offline cache, written by the build. Do not edit.
-const CACHE = ${JSON.stringify(`egocraft-${version}`)};
+// One cache per address (the app's folder), so copies of EgoCraft at two
+// addresses on the same site never delete each other's files. Caches named
+// the old way (egocraft-<hash>, before 0.4.0) are cleared.
+const PREFIX = 'egocraft:' + new URL(self.registration.scope).pathname + ':';
+const CACHE = PREFIX + ${JSON.stringify(version)};
 const FILES = ${JSON.stringify(files)};
 
 self.addEventListener('install', (event) => {
@@ -17,7 +21,7 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('egocraft-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => (k.startsWith(PREFIX) && k !== CACHE) || /^egocraft-[0-9a-f]{12}$/.test(k)).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
   );
 });
 
