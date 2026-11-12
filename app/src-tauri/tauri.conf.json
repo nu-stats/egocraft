@@ -22,6 +22,9 @@
     "macOS": {
       "minimumSystemVersion": "11.0",
       "signingIdentity": "-"
+    },
+    "windows": {
+      "nsis": { "installMode": "currentUser" }
     }
   }
 }

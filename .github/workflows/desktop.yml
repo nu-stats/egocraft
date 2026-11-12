@@ -1,14 +1,14 @@
 name: desktop
 
-# EgoCraft as an installed Mac app: one disk image (.dmg) for Macs with an
-# Apple chip (M1 and later) and one for Macs with an Intel chip. The app is a
-# Tauri window (app/src-tauri) around the same built app as the web build;
-# the app's files are inside the program, so it needs no browser, Node or
-# server.
+# EgoCraft as an installed app: one Mac disk image (.dmg) for Macs with an
+# Apple chip (M1 and later), one for Macs with an Intel chip, and a Windows
+# installer. The app is a Tauri window (app/src-tauri) around the same built
+# app as the web build; the app's files are inside the program, so it needs
+# no browser, Node or server.
 #
 # It runs on a pull request that changes the desktop app, by hand (Actions >
 # desktop > Run workflow), and for a version tag such as v0.5.0, which also
-# adds the two disk images to that tag's release if the release exists.
+# adds the installers to that tag's release if the release exists.
 #
 # The images are signed only ad hoc, not by Apple, unless the repository
 # variable MACOS_SIGNING is "true" and the secrets below are set (the same
@@ -153,25 +153,89 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  windows:
+    # A Windows installer that needs no admin rights (installed for the user
+    # alone, with a Start menu entry and an uninstaller), and the same app as
+    # a single EgoCraft.exe. Not signed yet: Windows shows "Windows protected
+    # your PC" first (More info > Run anyway). The window is Edge WebView2,
+    # part of Windows 11.
+    name: Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run ci
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - run: npx --yes @tauri-apps/cli@${{ env.TAURI_CLI }} build --bundles nsis
+
+      # Start the app and make sure it is still running, then name the files.
+      - name: Check and name the files
+        shell: pwsh
+        run: |
+          $exe = "src-tauri/target/release/egocraft-desktop.exe"
+          $p = Start-Process $exe -PassThru
+          Start-Sleep 15
+          if ($p.HasExited) { Write-Error "EgoCraft quit by itself (exit code $($p.ExitCode))"; exit 1 }
+          "EgoCraft was still running after 15 seconds"
+          Stop-Process -Id $p.Id -Force
+          Copy-Item $exe EgoCraft.exe
+          Compress-Archive -Path EgoCraft.exe -DestinationPath EgoCraft-windows-x64.zip
+          Copy-Item (Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1).FullName EgoCraft-windows-setup.exe
+          Get-ChildItem EgoCraft-windows-* | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EgoCraft-windows-setup
+          path: app/EgoCraft-windows-setup.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EgoCraft-windows-x64
+          path: app/EgoCraft-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
+
   release:
-    # A version tag: add both disk images and their checksums to the tag's
+    # A version tag: add the installers and their checksums to the tag's
     # release. A release is not created here (that is done by hand, with its
     # notes and the Zenodo DOI), so nothing happens if it does not exist yet.
-    name: add the disk images to the release
+    name: add the installers to the release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: mac
+    needs: [mac, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: EgoCraft-mac-*
+          pattern: EgoCraft-*
           path: files
           merge-multiple: true
       - name: Checksums
         working-directory: files
-        run: sha256sum *.dmg > SHA256SUMS-mac.txt && cat SHA256SUMS-mac.txt
+        run: sha256sum EgoCraft-* > SHA256SUMS-desktop.txt && cat SHA256SUMS-desktop.txt
       - name: Upload
         env:
           GH_TOKEN: ${{ github.token }}
@@ -179,5 +243,5 @@ jobs:
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" files/* --repo "$GITHUB_REPOSITORY" --clobber
           else
-            echo "::notice::No release for $GITHUB_REF_NAME yet: the disk images are under this run's artifacts"
+            echo "::notice::No release for $GITHUB_REF_NAME yet: the installers are under this run's artifacts"
           fi

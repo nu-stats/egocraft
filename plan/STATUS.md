@@ -214,5 +214,6 @@ Updated 2026-10-29 (version 0.4.0). Task ids are those in `ROADMAP.md`.
   repository since 2026-10-30). Mac app 2026-11-12: a Tauri window around
   the built app (`app/src-tauri`), with a disk image for Apple silicon and
   one for Intel built by `.github/workflows/desktop.yml`, and an install
-  guide (`handouts/`). Not done: Apple signing, Windows and Linux installers
-  (wait on the code-signing accounts).
+  guide (`handouts/`). Windows installer (per user, no admin rights) and
+  portable exe from the same workflow, with a Windows 11 install guide.
+  Not done: signing (waits on the code-signing accounts), Linux packages.

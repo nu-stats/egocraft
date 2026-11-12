@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Installing EgoCraft on Windows 11</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<p class="kicker">EgoCraft · version 0.4.0 · 12 November 2026</p>
+<h1>Installing EgoCraft on Windows 11</h1>
+<p class="lead">How to install it, get past Windows' first warning, and try it out. It takes about five minutes, and you don't need to be an administrator.</p>
+
+<h2>Installing</h2>
+
+<div class="card step">
+  <div class="num">1</div>
+  <div>
+    <h3>Get the file</h3>
+    <p>You need <code>EgoCraft-windows-setup.exe</code>. If you were sent <code>egocraft.zip</code>, right-click it in your <b>Downloads</b> folder, choose <b>Extract All…</b>, then <b>Extract</b>. The installer and this guide are inside.</p>
+    <p class="quiet">If Edge says the file "isn't commonly downloaded", click <b>…</b> next to it, then <b>Keep</b>, then <b>Show more ▸ Keep anyway</b>. EgoCraft needs Windows 10 or 11 (64-bit); nothing else needs installing first.</p>
+  </div>
+</div>
+
+<div class="card step">
+  <div class="num">2</div>
+  <div>
+    <h3>Run the installer</h3>
+    <p>Double-click <code>EgoCraft-windows-setup.exe</code>. Because EgoCraft isn't signed yet, Windows may first show a blue box saying <b>Windows protected your PC</b>:</p>
+    <ul>
+      <li>Click <b>More info</b>.</li>
+      <li>Check that it names <b>EgoCraft</b>, then click <b>Run anyway</b>.</li>
+    </ul>
+    <p>Click <b>Next</b> through the installer; the folder it suggests is fine. EgoCraft is installed for you alone, in your own user folder, so Windows doesn't ask for an administrator password. On the last page, tick <b>Create desktop shortcut</b> if you want one, leave <b>Run EgoCraft</b> ticked, and click <b>Finish</b>.</p>
+    <div class="note">You only do this once. From then on, open EgoCraft from the <b>Start</b> menu like any other app.</div>
+  </div>
+</div>
+
+<h2>Trying it</h2>
+
+<div class="card">
+  <h3>Start with the sample study</h3>
+  <p>Click <b>Open the sample study</b>: a made-up study of 200 people in two waves, with egos, alters and the ties between them, so every screen has something in it. Use the steps on the left (<b>Checks</b>, <b>Data</b>, <b>Sociograms</b>, <b>Measures</b>, <b>Results</b>) to walk through it.</p>
+</div>
+
+<div class="card">
+  <h3>Your own study</h3>
+  <ul>
+    <li>Click <b>Start a new study</b>, then choose your ego, alter and tie files on <b>Import</b>, or drag them onto the boxes. CSV, Excel, Stata, SPSS and R files all work, as do exports from Network Canvas, EgoWeb, EgoNet and E-Net.</li>
+    <li>On <b>Results</b>, <b>Save the results (ZIP)</b> saves one row per ego with the codebook, and the <b>Stata do-file</b> and <b>R script</b> buttons save the code that reproduces every number.</li>
+    <li>Saved files go to your <b>Downloads</b> folder, and EgoCraft says where each one went.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>Where your studies are kept</h3>
+  <p>The open study is kept inside the EgoCraft app on this computer, so it is still there next time. That is separate from EgoCraft in a web browser, on an iPad or in Pinokio: to bring a study across, use <b>Save as a file</b> there and <b>Open a study file</b> here.</p>
+  <p class="quiet">Use <b>Save as a file</b> now and then to keep a copy (<code>.egocraft</code>) you can back up or share. Everything stays on this computer: EgoCraft sends nothing anywhere.</p>
+</div>
+
+<h2>If something goes wrong</h2>
+
+<div class="card">
+  <h3>"Smart App Control blocked an app that may be unsafe"</h3>
+  <p>Some Windows 11 computers have Smart App Control turned on, and it blocks unsigned apps with no <b>Run anyway</b> button. Don't turn it off for EgoCraft. Use the web version instead: open <b>nu-stats.github.io/egocraft</b> in Edge. It is the same app, keeps your studies in the browser, and works offline once opened. Your IT department may also be able to allow the installer.</p>
+</div>
+
+<div class="card">
+  <h3>The window opens blank</h3>
+  <p>EgoCraft draws its window with Microsoft Edge WebView2, which is part of Windows 11. On an older or trimmed-down Windows, install the <b>WebView2 Runtime</b> from Microsoft's website, then open EgoCraft again.</p>
+</div>
+
+<div class="card">
+  <h3>Removing it</h3>
+  <p>Save any study you want to keep as a file first. Then open <b>Start ▸ Settings ▸ Apps ▸ Installed apps</b>, find <b>EgoCraft</b>, click <b>…</b> and choose <b>Uninstall</b>.</p>
+</div>
+
+<h2>What to send back</h2>
+<div class="card">
+  <ul>
+    <li>Did the installer run after <b>Run anyway</b>, or did Smart App Control block it?</li>
+    <li>Your Windows version (<b>Start ▸ Settings ▸ System ▸ About</b>).</li>
+    <li>Whether dragging files onto <b>Import</b> worked, and whether saved files landed in Downloads.</li>
+    <li>Screenshots of anything odd or confusing.</li>
+  </ul>
+</div>
+
+<p class="foot">EgoCraft is an independent project, not affiliated with Network Canvas, EgoNet, egor, E-Net, VennMaker, UCINET or ORA; they are named only to describe compatibility. Free under the MIT or Apache-2.0 license.</p>
+</body>
+</html>

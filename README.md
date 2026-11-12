@@ -107,29 +107,31 @@ Then open the address it prints (`http://127.0.0.1:4320/` by default). Use
 `npm run serve -- --port 5000` for another port. `npm run dev` starts the
 development server instead.
 
-### As an installed Mac app
+### As an installed app (Mac and Windows)
 
-EgoCraft also comes as a Mac app that needs no browser, Node or terminal:
-`EgoCraft-mac-apple-silicon.dmg` for Macs with an Apple chip (M1 and later)
-and `EgoCraft-mac-intel.dmg` for Macs with an Intel chip (Apple menu ▸
-**About This Mac** says which). It needs macOS 11 or later. Open the disk
-image and drag EgoCraft to Applications. It is not signed by Apple yet, so
-the first time macOS says it cannot check it: open **System Settings ▸
-Privacy & Security** and click **Open Anyway**. The step-by-step guide is
-[handouts/EgoCraft-Mac-install-guide.pdf](handouts/EgoCraft-Mac-install-guide.pdf).
+EgoCraft also comes as an app that needs no browser, Node or terminal. None
+of the files is signed yet, so the first launch needs one extra click; the
+step-by-step guides are in `handouts/`.
+
+| File | For |
+|---|---|
+| `EgoCraft-mac-apple-silicon.dmg` | Macs with an Apple chip (M1 and later), macOS 11 or later. Open it and drag EgoCraft to Applications; the first time, **System Settings ▸ Privacy & Security ▸ Open Anyway**. [Guide](handouts/EgoCraft-Mac-install-guide.pdf) |
+| `EgoCraft-mac-intel.dmg` | Macs with an Intel chip (Apple menu ▸ **About This Mac** says which); the same steps. |
+| `EgoCraft-windows-setup.exe` | Windows 10 and 11. Installs for you alone, with no admin rights, a Start menu entry and an uninstaller; at "Windows protected your PC", **More info ▸ Run anyway**. [Guide](handouts/EgoCraft-Windows-install-guide.pdf) |
+| `EgoCraft-windows-x64.zip` | Windows, portable: unzip and run `EgoCraft.exe`. |
 
 The app is a Tauri window (`app/src-tauri`) around the same built app as the
 web build, with the app's files inside it, so there is no server or port.
-Studies are kept in the app's own storage on that Mac, separate from a
+Studies are kept in the app's own storage on that computer, separate from a
 browser's: move one across with **Save as a file** and **Open a study file**.
-Saved files go to Downloads.
+Saved files go to Downloads. On Windows the window is Edge WebView2, part of
+Windows 11. Where Smart App Control blocks unsigned apps, use the web build.
 
-The disk images can only be built on a Mac, so GitHub builds them
-(`.github/workflows/desktop.yml`): open **Actions ▸ desktop ▸ Run workflow**,
-then download **EgoCraft-mac-apple-silicon** and **EgoCraft-mac-intel** from
-the finished run. A version tag (`v0.5.0`) also adds them to that version's
-release. On a Mac with Rust and Node 24, `npx @tauri-apps/cli@2 build
---bundles dmg` in `app/` builds one for that Mac.
+GitHub builds all four (`.github/workflows/desktop.yml`): open **Actions ▸
+desktop ▸ Run workflow**, then download them from the finished run. A
+version tag (`v0.5.0`) also adds them to that version's release. With Rust
+and Node 24, `npx @tauri-apps/cli@2 build` in `app/` builds the one for the
+computer you are on (`--bundles dmg` on a Mac, `--bundles nsis` on Windows).
 
 ### Your files
 
