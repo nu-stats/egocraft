@@ -1,0 +1,183 @@
+name: desktop
+
+# EgoCraft as an installed Mac app: one disk image (.dmg) for Macs with an
+# Apple chip (M1 and later) and one for Macs with an Intel chip. The app is a
+# Tauri window (app/src-tauri) around the same built app as the web build;
+# the app's files are inside the program, so it needs no browser, Node or
+# server.
+#
+# It runs on a pull request that changes the desktop app, by hand (Actions >
+# desktop > Run workflow), and for a version tag such as v0.5.0, which also
+# adds the two disk images to that tag's release if the release exists.
+#
+# The images are signed only ad hoc, not by Apple, unless the repository
+# variable MACOS_SIGNING is "true" and the secrets below are set (the same
+# names QualCraft's and StatCraft's workflows use). Unsigned, macOS asks for
+# Open Anyway in System Settings > Privacy & Security on the first launch
+# (handouts/EgoCraft-Mac-install-guide.pdf).
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "app/src-tauri/**"
+      - "app/package.json"
+      - "app/package-lock.json"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Tauri's build tool, fetched here only: it is a native program, so it is
+  # kept out of app/package.json, which Pinokio installs (AGENTS.md section 3).
+  TAURI_CLI: "2.12.4"
+
+jobs:
+  mac:
+    name: Mac disk image (${{ matrix.kind }})
+    runs-on: macos-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kind: apple-silicon
+            target: aarch64-apple-darwin
+            arch: arm64
+          - kind: intel
+            target: x86_64-apple-darwin
+            arch: x86_64
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+          workspaces: app/src-tauri
+
+      - run: npm ci --no-audit --no-fund
+      # The app's own checks first (type check, tests, build)
+      - run: npm run ci
+      # The desktop shell's own test (where saved files go)
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      # Tauri signs with Apple's certificate whenever these variables exist,
+      # even empty, so they are set only when signing is turned on.
+      - name: Signing and notarization settings
+        if: vars.MACOS_SIGNING == 'true'
+        env:
+          API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          echo "$API_KEY_P8" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          {
+            echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8"
+            echo "APPLE_CERTIFICATE=$CERT_P12"
+            echo "APPLE_CERTIFICATE_PASSWORD=$CERT_PASSWORD"
+            echo "APPLE_SIGNING_IDENTITY=$IDENTITY"
+            echo "APPLE_API_KEY=$API_KEY_ID"
+            echo "APPLE_API_ISSUER=$API_ISSUER"
+          } >> "$GITHUB_ENV"
+
+      # hdiutil on GitHub's Macs sometimes fails with "Resource busy": retry.
+      - name: Build the app and disk image
+        run: |
+          for attempt in 1 2 3; do
+            for v in /Volumes/EgoCraft*; do [ -d "$v" ] && hdiutil detach "$v" -force || true; done
+            npx --yes @tauri-apps/cli@${{ env.TAURI_CLI }} build --target ${{ matrix.target }} --bundles dmg && break
+            [ $attempt = 3 ] && exit 1
+            echo "Retrying the disk image ($attempt)"; sleep 15
+          done
+
+      # Open the finished disk image and check what is inside, then start the
+      # app from it, so a broken image fails here and not on someone's Mac.
+      - name: Check the disk image
+        run: |
+          set -euo pipefail
+          dmg=$(ls src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg)
+          echo "$dmg"; ls -lh "$dmg"
+          mount=$(hdiutil attach "$dmg" -nobrowse -readonly | tail -1 | sed -E 's/.*(\/Volumes\/.*)/\1/')
+          app="$mount/EgoCraft.app"
+          ls "$mount" "$app/Contents/MacOS"
+          test -L "$mount/Applications"
+          exe="$app/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")"
+          archs=$(lipo -archs "$exe")
+          echo "processor: $archs"
+          test "$archs" = "${{ matrix.arch }}"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist"
+          codesign --verify --deep --strict "$app"
+          codesign -dv "$app" 2>&1 | grep -E 'Identifier|Signature|Authority' || true
+          # Start it (Intel copies run through Rosetta on an Apple chip, when
+          # this machine has it) and make sure it is still running.
+          if [ "${{ matrix.arch }}" = "$(uname -m)" ] || { [ "${{ matrix.arch }}" = x86_64 ] && arch -x86_64 /usr/bin/true 2>/dev/null; }; then
+            "$exe" > "$RUNNER_TEMP/app.log" 2>&1 &
+            pid=$!
+            sleep 15
+            if ! kill -0 $pid 2>/dev/null; then
+              echo "::error::EgoCraft quit by itself"; cat "$RUNNER_TEMP/app.log"; exit 1
+            fi
+            echo "EgoCraft was still running after 15 seconds"
+            kill $pid; wait $pid 2>/dev/null || true
+          else
+            echo "::notice::This machine cannot run Intel programs; the Intel app was checked but not started"
+          fi
+          hdiutil detach "$mount"
+          cp "$dmg" "EgoCraft-mac-${{ matrix.kind }}.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EgoCraft-mac-${{ matrix.kind }}
+          path: app/EgoCraft-mac-${{ matrix.kind }}.dmg
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    # A version tag: add both disk images and their checksums to the tag's
+    # release. A release is not created here (that is done by hand, with its
+    # notes and the Zenodo DOI), so nothing happens if it does not exist yet.
+    name: add the disk images to the release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: mac
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: EgoCraft-mac-*
+          path: files
+          merge-multiple: true
+      - name: Checksums
+        working-directory: files
+        run: sha256sum *.dmg > SHA256SUMS-mac.txt && cat SHA256SUMS-mac.txt
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" files/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            echo "::notice::No release for $GITHUB_REF_NAME yet: the disk images are under this run's artifacts"
+          fi

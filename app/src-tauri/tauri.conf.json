@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "EgoCraft",
+  "version": "../package.json",
+  "identifier": "io.github.nu-stats.egocraft",
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "category": "Education",
+    "shortDescription": "Egocentric network analysis",
+    "longDescription": "Import ego, alter and alter-tie files, check and merge them, draw each person's network, compute the measures you choose, and export one row per ego with the Stata and R code that reproduces every number. Everything stays on your computer.",
+    "copyright": "MIT OR Apache-2.0",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "signingIdentity": "-"
+    }
+  }
+}

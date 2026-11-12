@@ -107,6 +107,30 @@ Then open the address it prints (`http://127.0.0.1:4320/` by default). Use
 `npm run serve -- --port 5000` for another port. `npm run dev` starts the
 development server instead.
 
+### As an installed Mac app
+
+EgoCraft also comes as a Mac app that needs no browser, Node or terminal:
+`EgoCraft-mac-apple-silicon.dmg` for Macs with an Apple chip (M1 and later)
+and `EgoCraft-mac-intel.dmg` for Macs with an Intel chip (Apple menu ▸
+**About This Mac** says which). It needs macOS 11 or later. Open the disk
+image and drag EgoCraft to Applications. It is not signed by Apple yet, so
+the first time macOS says it cannot check it: open **System Settings ▸
+Privacy & Security** and click **Open Anyway**. The step-by-step guide is
+[handouts/EgoCraft-Mac-install-guide.pdf](handouts/EgoCraft-Mac-install-guide.pdf).
+
+The app is a Tauri window (`app/src-tauri`) around the same built app as the
+web build, with the app's files inside it, so there is no server or port.
+Studies are kept in the app's own storage on that Mac, separate from a
+browser's: move one across with **Save as a file** and **Open a study file**.
+Saved files go to Downloads.
+
+The disk images can only be built on a Mac, so GitHub builds them
+(`.github/workflows/desktop.yml`): open **Actions ▸ desktop ▸ Run workflow**,
+then download **EgoCraft-mac-apple-silicon** and **EgoCraft-mac-intel** from
+the finished run. A version tag (`v0.5.0`) also adds them to that version's
+release. On a Mac with Rust and Node 24, `npx @tauri-apps/cli@2 build
+--bundles dmg` in `app/` builds one for that Mac.
+
 ### Your files
 
 | Layout | What EgoCraft expects |
