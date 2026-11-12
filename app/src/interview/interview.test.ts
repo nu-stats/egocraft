@@ -105,13 +105,15 @@ test('interviews become a study EgoCraft can check and measure', () => {
 test('the device vault and the transfer file open only with the passphrase', async () => {
   const { meta, key } = await createVault('field laptop 7', now);
   const sealed = await seal(key, { hello: 'Ana' });
-  assert.ok(!sealed.data.includes('Ana'));
+  // A leak would be the JSON itself ("Ana" in quotes). Base64 has no quotes,
+  // but random base64 can spell Ana by chance, so the bare name is no test.
+  assert.ok(!sealed.data.includes('"Ana"'));
   const again = await openVault(meta, 'field laptop 7');
   assert.deepEqual(await unseal(again, sealed), { hello: 'Ana' });
   await assert.rejects(openVault(meta, 'wrong passphrase'), /Wrong passphrase/);
   const iv = interview('1', ['Ana', 'Ben']);
   const file = await interviewsToFile({ protocol: p, interviews: [iv], device: 'test', savedAt: now.toISOString() }, 'carry this home');
-  assert.ok(!new TextDecoder().decode(file).includes('Ana'));
+  assert.ok(!new TextDecoder().decode(file).includes('"Ana"'));
   const back = await interviewsFromFile(file, 'carry this home');
   assert.deepEqual(back.interviews[0], iv);
   await assert.rejects(interviewsFromFile(file, 'nope nope nope'), /Wrong passphrase/);

@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "EgoCraft's window runs the same built app as the web build; it needs no access to the computer through Tauri.",
+  "windows": ["main"],
+  "permissions": []
+}
