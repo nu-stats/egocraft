@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Installing EgoCraft on a Mac</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<p class="kicker">EgoCraft · version 0.4.0 · 12 November 2026</p>
+<h1>Installing EgoCraft on a Mac</h1>
+<p class="lead">How to pick the right copy, install it, open it the first time, and try it out. It takes about five minutes.</p>
+
+<h2>Installing</h2>
+
+<div class="card step">
+  <div class="num">1</div>
+  <div>
+    <h3>Check which kind of Mac you have</h3>
+    <p>Open the Apple menu and choose <b>About This Mac</b>. Look at the line called <b>Chip</b> or <b>Processor</b>:</p>
+    <div class="choice">
+      <div><small>It says Apple M1, M2, M3, M4 or later</small>You need <code>EgoCraft-mac-apple-silicon.dmg</code></div>
+      <div><small>It says Intel</small>You need <code>EgoCraft-mac-intel.dmg</code></div>
+    </div>
+    <p class="quiet">EgoCraft needs macOS 11 (Big Sur) or later. Nothing else needs installing first: no browser, Node or terminal.</p>
+  </div>
+</div>
+
+<div class="card step">
+  <div class="num">2</div>
+  <div>
+    <h3>Get the file</h3>
+    <p>If you were sent <code>egocraft.zip</code>, double-click it in your <b>Downloads</b> folder to unzip it. Inside are both disk images and this guide. Keep the one that matches your Mac.</p>
+    <p class="quiet">Otherwise, download it from <b>github.com/nu-stats/egocraft/releases</b>, under <b>Assets</b> for the latest version.</p>
+  </div>
+</div>
+
+<div class="card step">
+  <div class="num">3</div>
+  <div>
+    <h3>Copy EgoCraft to Applications</h3>
+    <p>Double-click the <code>.dmg</code>. A window opens with the EgoCraft app and an Applications folder. Drag <b>EgoCraft</b> onto <b>Applications</b>.</p>
+    <p>Then eject the EgoCraft disk: click the eject symbol next to it in Finder's sidebar.</p>
+  </div>
+</div>
+
+<div class="card step">
+  <div class="num">4</div>
+  <div>
+    <h3>Open it the first time</h3>
+    <p>Open <b>Applications</b> and double-click <b>EgoCraft</b>. Because EgoCraft isn't signed by Apple yet, macOS stops it the first time and says Apple could not check it. Click <b>Done</b> (or <b>OK</b>). Then:</p>
+    <ul>
+      <li>Open <b>Apple menu ▸ System Settings ▸ Privacy &amp; Security</b>.</li>
+      <li>Scroll down to <b>Security</b>. You'll see a line saying EgoCraft was blocked. Click <b>Open Anyway</b>.</li>
+      <li>Enter your Mac's password if asked, then click <b>Open Anyway</b> once more.</li>
+    </ul>
+    <div class="note">You only do this once. From then on EgoCraft opens like any other app.</div>
+  </div>
+</div>
+
+<h2>Trying it</h2>
+
+<div class="card">
+  <h3>Start with the sample study</h3>
+  <p>Click <b>Open the sample study</b>: a made-up study of 200 people in two waves, with egos, alters and the ties between them, so every screen has something in it. Use the steps on the left (<b>Checks</b>, <b>Data</b>, <b>Sociograms</b>, <b>Measures</b>, <b>Results</b>) to walk through it.</p>
+</div>
+
+<div class="card">
+  <h3>Your own study</h3>
+  <ul>
+    <li>Click <b>Start a new study</b>, then choose your ego, alter and tie files on <b>Import</b>, or drag them onto the boxes. CSV, Excel, Stata, SPSS and R files all work, as do exports from Network Canvas, EgoWeb, EgoNet and E-Net.</li>
+    <li>On <b>Results</b>, <b>Save the results (ZIP)</b> saves one row per ego with the codebook, and the <b>Stata do-file</b> and <b>R script</b> buttons save the code that reproduces every number.</li>
+    <li>Saved files go to your <b>Downloads</b> folder, and EgoCraft says where each one went.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>Where your studies are kept</h3>
+  <p>The open study is kept inside the EgoCraft app on this Mac, so it is still there next time. That is separate from EgoCraft in a web browser, on an iPad or in Pinokio: to bring a study across, use <b>Save as a file</b> there and <b>Open a study file</b> here.</p>
+  <p class="quiet">Use <b>Save as a file</b> now and then to keep a copy (<code>.egocraft</code>) you can back up or share. Everything stays on this Mac: EgoCraft sends nothing anywhere.</p>
+</div>
+
+<h2>If something goes wrong</h2>
+
+<div class="card">
+  <h3>macOS says EgoCraft is damaged and can't be opened</h3>
+  <p>This message can appear for apps downloaded from the internet that aren't signed by Apple. EgoCraft isn't damaged. Open <b>Terminal</b> (in Applications ▸ Utilities), paste this line, press Return, then open EgoCraft again:</p>
+  <pre>xattr -dr com.apple.quarantine /Applications/EgoCraft.app</pre>
+</div>
+
+<div class="card">
+  <h3>"You can't open the application" or it closes at once</h3>
+  <p>Check that you took the copy for your kind of Mac (step 1). An Intel copy on an Apple chip asks to install Rosetta; an Apple silicon copy does not open on an Intel Mac.</p>
+</div>
+
+<div class="card">
+  <h3>Removing it</h3>
+  <p>Save any study you want to keep as a file first. Then drag EgoCraft from Applications to the Trash.</p>
+</div>
+
+<h2>What to send back</h2>
+<div class="card">
+  <ul>
+    <li>Did it open after <b>Open Anyway</b>, or did macOS call it damaged?</li>
+    <li>Your Mac's chip and macOS version.</li>
+    <li>Whether dragging files onto <b>Import</b> worked, and whether saved files landed in Downloads.</li>
+    <li>Screenshots of anything odd or confusing.</li>
+  </ul>
+</div>
+
+<p class="foot">EgoCraft is an independent project, not affiliated with Network Canvas, EgoNet, egor, E-Net, VennMaker, UCINET or ORA; they are named only to describe compatibility. Free under the MIT or Apache-2.0 license.</p>
+</body>
+</html>

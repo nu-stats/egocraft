@@ -211,5 +211,9 @@ Updated 2026-10-29 (version 0.4.0). Task ids are those in `ROADMAP.md`.
 - P12.4 `CITATION.cff`; version 0.4.0 released 2026-10-30 with DOI
   10.5281/zenodo.23788152 (all versions; 0.4.0 is 10.5281/zenodo.23788153).
 - P12.1 Web build: https://nu-stats.github.io/egocraft/ (from this
-  repository since 2026-10-30). Not done: signed installers (wait on the
-  code-signing accounts).
+  repository since 2026-10-30). Mac app 2026-11-12: a Tauri window around
+  the built app (`app/src-tauri`), with a disk image for Apple silicon and
+  one for Intel built by `.github/workflows/desktop.yml`, and an install
+  guide (`handouts/`). Windows installer (per user, no admin rights) and
+  portable exe from the same workflow, with a Windows 11 install guide.
+  Not done: signing (waits on the code-signing accounts), Linux packages.
