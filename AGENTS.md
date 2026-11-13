@@ -67,6 +67,7 @@ egocraft/             Pinokio launcher (install, start, update, reset), docs
     ├── src/reshape   Long, wide and pairs forms
     ├── src/export    Results files, recipe, Stata do-file, R script, ZIP
     ├── src/sample    The made-up sample study (CC0)
+    ├── src/unpack    Opening compressed files picked in file boxes (shared with Husky Explorer)
     ├── src/ui        React interface
     └── server        Local static server (Node, no packages)
 ```
@@ -80,7 +81,8 @@ egocraft/             Pinokio launcher (install, start, update, reset), docs
   unsigned native binaries on some machines).
 - `src/io/statRead.js` and `statFiles.js` come from Husky Eye View and
   `src/io/table.ts`, `src/core/xml.ts` from QualCraft (same owner, MIT /
-  Apache-2.0). Fix bugs there in both places.
+  Apache-2.0). `src/unpack/*.js` comes from Husky Explorer (`app/web/lib`)
+  by way of QualCraft. Fix bugs there in every place.
 
 ## 4. Measures
 

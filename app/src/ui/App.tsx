@@ -47,9 +47,9 @@ function lastFileSave(id: string): string | null {
 function StudyView({ project, onProject, notify, go, kept }: { project: Project | null; onProject: (p: Project | null) => void; notify: Notify; go: (s: Step) => void; kept: boolean | null }) {
   const [, setTick] = useState(0);
   const open = async () => {
-    const f = await pickFile('.egocraft,.json');
-    if (!f) return;
     try {
+      const f = await pickFile('.egocraft,.json');
+      if (!f) return;
       onProject(projectFromJson(new TextDecoder().decode(await fileBytes(f))));
       notify(`Opened ${f.name}.`, 'ok');
     } catch (e) {
@@ -99,9 +99,9 @@ function StudyView({ project, onProject, notify, go, kept }: { project: Project 
               <button
                 title="Use the column choices, fixes, subgroups and measures of an earlier analysis (egocraft_recipe.json from a results ZIP) on this study's data"
                 onClick={async () => {
-                  const f = await pickFile('.json');
-                  if (!f) return;
                   try {
+                    const f = await pickFile('.json');
+                    if (!f) return;
                     const r = applyRecipe(project!, readRecipe(new TextDecoder().decode(await fileBytes(f))));
                     onProject(r.project);
                     window.alert(['Recipe used.', ...r.done, ...(r.todo.length ? ['', 'Still to do by hand:', ...r.todo] : [])].join('\n'));

@@ -50,7 +50,7 @@ export function MergePanel({ study, onStudy, notify }: { study: Study; onStudy: 
           </label>
         ))}
       </div>
-      <DropZone label="Outside file" hint="CSV, Excel, Stata, SPSS or R." file={outside?.name ?? null} accept={ACCEPT} onFile={load} />
+      <DropZone label="Outside file" hint="CSV, Excel, Stata, SPSS or R." file={outside?.name ?? null} onError={(m) => notify(m, 'error')} accept={ACCEPT} onFile={load} />
       {outside ? (
         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
           <div className="map">

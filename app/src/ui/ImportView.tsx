@@ -34,7 +34,13 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
   const codes = missingCodes.split(',').map((c) => c.trim()).filter(Boolean);
   const fmt = OTHER_FORMATS.find((f) => f.id === format)!;
   const loadOther = async () => {
-    const chosen = await pickFiles(fmt.accept);
+    let chosen: File[];
+    try {
+      chosen = await pickFiles(fmt.accept);
+    } catch (e) {
+      notify((e as Error).message, 'error');
+      return;
+    }
     if (!chosen.length) return;
     setBusy(true);
     try {
@@ -126,7 +132,7 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
             </label>
           ))}
         </div>
-        <p className="muted small">EgoCraft reads CSV, Excel (.xlsx and the older .xls), Stata (.dta), SPSS (.sav) and R (.rds, .RData). Files are read in this browser and never sent anywhere.</p>
+        <p className="muted small">EgoCraft reads CSV, Excel (.xlsx and the older .xls), Stata (.dta), SPSS (.sav) and R (.rds, .RData), also inside compressed files (.zip, .gz, .bz2, .xz, .zst, .tar). Files are read in this browser and never sent anywhere.</p>
       </Panel>
 
       {layout === 'other' ? (
@@ -164,7 +170,7 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
         </Panel>
       ) : layout === 'wide' ? (
         <Panel title="The wide file">
-          <DropZone label="Survey file" hint="One row per person interviewed." file={files.wide?.name ?? null} accept={ACCEPT} onFile={(f) => load('wide', f)} />
+          <DropZone label="Survey file" hint="One row per person interviewed." file={files.wide?.name ?? null} onError={(m) => notify(m, 'error')} accept={ACCEPT} onFile={(f) => load('wide', f)} />
           {files.wide ? (
             <>
               <div className="map" style={{ marginTop: 12 }}>
@@ -182,10 +188,10 @@ export function ImportView({ study, onStudy, notify, goNext }: { study: Study; o
         </Panel>
       ) : (
         <div className="grid3">
-          <DropZone label="Ego file" hint="One row per person interviewed (and per wave)." file={files.egos?.name ?? null} accept={ACCEPT} onFile={(f) => load('egos', f)} />
-          <DropZone label="Alter file" hint="One row per person named, with the ego’s ID." file={files.alters?.name ?? null} accept={ACCEPT} onFile={(f) => load('alters', f)} />
+          <DropZone label="Ego file" hint="One row per person interviewed (and per wave)." file={files.egos?.name ?? null} onError={(m) => notify(m, 'error')} accept={ACCEPT} onFile={(f) => load('egos', f)} />
+          <DropZone label="Alter file" hint="One row per person named, with the ego’s ID." file={files.alters?.name ?? null} onError={(m) => notify(m, 'error')} accept={ACCEPT} onFile={(f) => load('alters', f)} />
           {layout === 'three' ? (
-            <DropZone label="Tie file (optional)" hint="One row per pair of alters, with the ego’s ID and both alter IDs." file={files.ties?.name ?? null} accept={ACCEPT} onFile={(f) => load('ties', f)} />
+            <DropZone label="Tie file (optional)" hint="One row per pair of alters, with the ego’s ID and both alter IDs." file={files.ties?.name ?? null} onError={(m) => notify(m, 'error')} accept={ACCEPT} onFile={(f) => load('ties', f)} />
           ) : (
             <div className="drop">
               <strong>Tie columns in the alter file</strong>

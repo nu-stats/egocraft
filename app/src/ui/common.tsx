@@ -4,6 +4,8 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Cell, DataTable } from '../core/data.ts';
 import { isMissing } from '../core/data.ts';
+import { extensionsOf, openPicked, withCompressed, type Unpacked } from '../unpack/open.ts';
+import { kindOf } from '../unpack/unpack.js';
 
 export type Notify = (message: string, kind?: 'ok' | 'error') => void;
 
@@ -24,29 +26,121 @@ export async function fileBytes(file: File): Promise<Uint8Array> {
   return new Uint8Array(await file.arrayBuffer());
 }
 
-/** Ask for one file. Resolves null if the user cancels. */
-/** Several files at once (an export made of several files). */
-export function pickFiles(accept: string): Promise<File[]> {
+// ---------- Compressed files ----------
+// Every file box also takes .zip, .gz, .bz2, .xz, .zst and .tar files (and
+// .tar.gz and the like): they are opened here, so the screens get the file
+// inside. Zip-based formats a box reads (.xlsx) reach their reader unopened.
+
+/**
+ * The files to use from files picked or dropped in a box that reads `accept`.
+ * A compressed file gives what is inside it: every fitting file for a box that
+ * takes several, or, for a box that takes one, the only fitting file or the one
+ * the person chooses (empty when they cancel). Rejects with a plain message for
+ * a damaged, password-protected, 7-Zip or RAR file.
+ */
+export async function openCompressed(picked: File[], accept: string, multiple: boolean): Promise<File[]> {
+  const extensions = extensionsOf(accept);
+  const out: File[] = [];
+  for (const file of picked) {
+    const head = new Uint8Array(await file.slice(0, 512).arrayBuffer());
+    if (kindOf(head) === 'plain') {
+      out.push(file);
+      continue;
+    }
+    let inside: Unpacked[];
+    try {
+      inside = await openPicked(file.name, await fileBytes(file), extensions);
+    } catch (e) {
+      // A file named as something this box reads (an encrypted EgoCraft file
+      // whose first bytes happen to look like an archive) goes to its reader.
+      if (extensions.some((x) => file.name.toLowerCase().endsWith(x))) {
+        out.push(file);
+        continue;
+      }
+      const message = (e as Error).message;
+      throw new Error(message.includes(file.name) ? message : `“${file.name}” could not be opened. ${message}`);
+    }
+    if (inside.length === 1 && inside[0]!.name === file.name && inside[0]!.bytes.length === file.size) out.push(file);
+    else if (multiple) out.push(...inside.map(asFile));
+    else {
+      const one = inside.length === 1 ? inside[0] : await chooseInside(file.name, inside);
+      if (!one) return [];
+      out.push(asFile(one));
+    }
+  }
+  return out;
+}
+
+const asFile = (f: Unpacked) => new File([new Uint8Array(f.bytes)], f.name);
+
+const sizeText = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
+
+/** Asks which of an archive's files to use; null when the person cancels. */
+function chooseInside(archive: string, files: Unpacked[]): Promise<Unpacked | null> {
+  return new Promise((resolve) => {
+    const scrim = document.createElement('div');
+    scrim.className = 'scrim';
+    const dialog = document.createElement('div');
+    dialog.className = 'dialog';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    const title = document.createElement('h2');
+    title.textContent = `“${archive}” holds ${files.length} files. Which one?`;
+    dialog.setAttribute('aria-label', title.textContent);
+    const list = document.createElement('ul');
+    list.className = 'archive-files';
+    const done = (f: Unpacked | null) => {
+      window.removeEventListener('keydown', onKey);
+      scrim.remove();
+      resolve(f);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && done(null);
+    for (const f of files) {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'link';
+      b.textContent = `${f.name} (${sizeText(f.bytes.length)})`;
+      b.addEventListener('click', () => done(f));
+      li.append(b);
+      list.append(li);
+    }
+    const actions = document.createElement('div');
+    actions.className = 'dialog-actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', () => done(null));
+    actions.append(cancel);
+    dialog.append(title, list, actions);
+    scrim.append(dialog);
+    scrim.addEventListener('mousedown', (e) => e.target === scrim && done(null));
+    window.addEventListener('keydown', onKey);
+    document.body.append(scrim);
+    list.querySelector('button')?.focus();
+  });
+}
+
+function chooseFiles(accept: string, multiple: boolean): Promise<File[]> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = accept;
-    input.multiple = true;
+    input.accept = withCompressed(accept);
+    input.multiple = multiple;
     input.onchange = () => resolve(Array.from(input.files ?? []));
     input.addEventListener('cancel', () => resolve([]));
     input.click();
   });
 }
 
-export function pickFile(accept: string): Promise<File | null> {
-  return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = accept;
-    input.onchange = () => resolve(input.files?.[0] ?? null);
-    input.addEventListener('cancel', () => resolve(null));
-    input.click();
-  });
+/** Several files at once (an export made of several files). Compressed files give the files inside. */
+export async function pickFiles(accept: string): Promise<File[]> {
+  return openCompressed(await chooseFiles(accept, true), accept, true);
+}
+
+/** Ask for one file. Resolves null if the user cancels. A compressed file gives the file inside. */
+export async function pickFile(accept: string): Promise<File | null> {
+  return (await openCompressed(await chooseFiles(accept, false), accept, false))[0] ?? null;
 }
 
 function cellText(v: Cell | undefined): string {
@@ -124,8 +218,16 @@ export function Panel({ title, children, actions }: { title?: string; children: 
 }
 
 /** A drop zone that also opens a file picker when clicked. */
-export function DropZone({ label, hint, file, onFile, accept }: { label: string; hint: string; file: string | null; onFile: (f: File) => void; accept: string }) {
+export function DropZone({ label, hint, file, onFile, onError, accept }: { label: string; hint: string; file: string | null; onFile: (f: File) => void; onError: (message: string) => void; accept: string }) {
   const [over, setOver] = useState(false);
+  const take = async (pick: () => Promise<File | null>) => {
+    try {
+      const f = await pick();
+      if (f) onFile(f);
+    } catch (e) {
+      onError((e as Error).message);
+    }
+  };
   return (
     <div
       className={`drop${over ? ' over' : ''}`}
@@ -138,17 +240,14 @@ export function DropZone({ label, hint, file, onFile, accept }: { label: string;
         e.preventDefault();
         setOver(false);
         const f = e.dataTransfer.files[0];
-        if (f) onFile(f);
+        if (f) void take(async () => (await openCompressed([f], accept, false))[0] ?? null);
       }}
     >
       <strong>{label}</strong>
       <span className="muted small">{hint}</span>
       <div className="row">
         <button
-          onClick={async () => {
-            const f = await pickFile(accept);
-            if (f) onFile(f);
-          }}
+          onClick={() => void take(() => pickFile(accept))}
         >
           {file ? 'Choose another file' : 'Choose a file'}
         </button>

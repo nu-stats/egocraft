@@ -97,8 +97,12 @@ export function PrivacyPanel({ study, onStudy, notify }: { study: Study; onStudy
         </button>
         <button
           onClick={async () => {
-            const f = await pickFile('.egocraft-key');
-            if (f) setKeyFile({ name: f.name, bytes: await fileBytes(f) });
+            try {
+              const f = await pickFile('.egocraft-key');
+              if (f) setKeyFile({ name: f.name, bytes: await fileBytes(f) });
+            } catch (e) {
+              notify((e as Error).message, 'error');
+            }
           }}
         >
           Open a saved key
