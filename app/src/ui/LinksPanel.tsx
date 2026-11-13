@@ -43,9 +43,9 @@ export function LinksPanel({ study, nets, results, measures, long, onStudy, noti
   };
 
   const bringCodes = async () => {
-    const f = await pickFile('.csv,.xlsx,.xls');
-    if (!f) return;
     try {
+      const f = await pickFile('.csv,.xlsx,.xls');
+      if (!f) return;
       const t = await readDataFile(f.name, await fileBytes(f));
       const r = fromQualCraftMatrix(t, withWave);
       if (!r.table.rows.length) throw new Error(`None of the cases in ${f.name} are named like EgoCraft alters (${withWave ? 'ego:wave:alter' : 'ego:alter'}).`);

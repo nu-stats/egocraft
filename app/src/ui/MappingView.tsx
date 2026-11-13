@@ -63,9 +63,9 @@ export function MappingView({ study, onStudy, goNext }: { study: Study; onStudy:
         <button onClick={() => download(`${study.name} columns.egocraft-columns`.replace(/[\/:*?"<>|]/g, ' '), JSON.stringify(savedColumns(study), null, 2), 'application/json')}>Save these choices</button>
         <button
           onClick={async () => {
-            const f = await pickFile('.egocraft-columns,.json');
-            if (!f) return;
             try {
+              const f = await pickFile('.egocraft-columns,.json');
+              if (!f) return;
               const r = applyMapping(study, readSavedColumns(new TextDecoder().decode(await fileBytes(f))).mapping);
               onStudy(r.study);
               window.alert(`Used ${r.used.length} saved choice${r.used.length === 1 ? '' : 's'}.${r.missing.length ? ` Not in these files: ${r.missing.join(', ')}.` : ''}`);

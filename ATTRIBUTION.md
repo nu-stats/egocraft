@@ -9,6 +9,7 @@ ships with, and the methods it implements.
 |---|---|---|---|
 | `app/src/io/statRead.js`, `app/src/io/statFiles.js` | Husky Eye View contributors (nu-stats) | `nu-stats/husky-eye-view`, `src/analysis/` | MIT |
 | `app/src/io/table.ts`, `app/src/core/xml.ts` | QualCraft contributors (nu-stats) | `nu-stats/qualcraft` | MIT OR Apache-2.0 |
+| `app/src/unpack/*.js`, `*.d.ts`, `fixtures/*`, `unpack.test.ts`, `unxz-unzstd.test.ts`, `open.ts`, `open.test.ts` | the same author as EgoCraft (nu-stats) | copied from Husky Explorer (`nu-stats/husky-explorer`, `app/web/lib`, commit ef3fa8b) by way of QualCraft (`nu-stats/qualcraft`, `app/src/unpack`, which added the types, `open.ts` and the TypeScript tests): zip, gzip, bzip2, xz, Zstandard and tar readers written from the public format descriptions, no dependencies | MIT OR Apache-2.0 |
 | `app/public/icon.svg`, `icon.png` | EgoCraft contributors | drawn for EgoCraft (`app/scripts/make-icon.mjs`) | MIT OR Apache-2.0 |
 | `app/src/sample/sample.ts`, `examples/*` | EgoCraft contributors | made-up study written for EgoCraft; no real people | CC0 1.0 |
 

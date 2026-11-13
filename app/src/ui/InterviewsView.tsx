@@ -264,9 +264,9 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
                 <button onClick={() => { const p = emptyProtocol('New questionnaire'); saveProtocol(p).then(refreshProtocols); setEditing(p); }}>Start blank</button>
                 <button
                   onClick={async () => {
-                    const f = await pickFile('.egocraft-protocol,.json');
-                    if (!f) return;
                     try {
+                      const f = await pickFile('.egocraft-protocol,.json');
+                      if (!f) return;
                       const p = protocolFromJson(new TextDecoder().decode(await fileBytes(f)));
                       await saveProtocol(p);
                       refreshProtocols();
@@ -387,8 +387,12 @@ export function InterviewsView({ notify, onProject, goChecks }: { notify: Notify
           <button
             className="primary"
             onClick={async () => {
-              const f = await pickFile('.egocraft-interviews');
-              if (f) setIncoming({ name: f.name, bytes: await fileBytes(f) });
+              try {
+                const f = await pickFile('.egocraft-interviews');
+                if (f) setIncoming({ name: f.name, bytes: await fileBytes(f) });
+              } catch (e) {
+                notify((e as Error).message, 'error');
+              }
             }}
           >
             Open an interview file

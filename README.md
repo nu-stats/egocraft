@@ -116,6 +116,15 @@ development server instead.
 | One wide file | One row per ego, alters spread across columns (`alter1_age`, `alter2_age` … or `age_1`, `age_2` …), ties in columns such as `tie_1_2` or `knows1-2`. |
 | From another program | Network Canvas's CSV export (…_ego.csv, …_attributeList_<type>.csv, …_edgeList_<type>.csv) or GraphML; EgoWeb 2.0's ego-alter and alter-pair files; EgoNet's ego file with an alter and an edge file per ego; E-Net's row-wise file (*ego data, *alter data, *alter-alter data); any GraphML with one graph per ego. Choose all the files, or the ZIP. These readers follow each program's documentation and have been tested on made-up files only. |
 
+**Compressed files.** Every file box also opens .zip, .gz, .bz2, .xz, .zst
+and .tar files, and the combinations (.tar.gz, .tgz, .tar.xz and so on), in
+the browser with nothing sent anywhere. An `egos.csv.gz` comes in as its
+`egos.csv` and a `survey.sav.zst` as the SPSS file; a box that takes one file
+asks which when an archive holds several that fit. Excel .xlsx files and R
+files, which are compressed themselves, are read as they are (and an .rds
+saved with bzip2 or xz compression now opens too). Damaged,
+password-protected, 7-Zip and RAR files are refused with a message.
+
 The sample study's three files are in [examples/](examples/).
 
 ### Where studies are kept
